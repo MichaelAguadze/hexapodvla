@@ -1,4 +1,4 @@
-"""Train the TurboPi CNN policy."""
+"""Train the hexapod CNN policy."""
 
 from __future__ import annotations
 
@@ -88,7 +88,7 @@ def resolve_episodes_dir(path: Path) -> Path:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Train the TurboPi CNN policy")
+    parser = argparse.ArgumentParser(description="Train the hexapod CNN policy")
     parser.add_argument("--episodes-dir", default=DEFAULT_DATA_ROOT)
     parser.add_argument("--run-dir", default="runs/cnn_v1",
                         help="Base directory for training runs; each launch creates a timestamped child run")

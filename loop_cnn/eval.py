@@ -17,7 +17,7 @@ from .train import evaluate_model, resolve_device
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Evaluate the TurboPi CNN policy")
+    parser = argparse.ArgumentParser(description="Evaluate the hexapod CNN policy")
     parser.add_argument("--episodes-dir", default=DEFAULT_DATA_ROOT)
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--split", choices=("train", "val", "all"), default="val")

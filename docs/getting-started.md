@@ -6,7 +6,7 @@ If you are working on the separate CNN workflow, use [CNN Dataset And Training G
 
 ## What You Need
 
-- A TurboPi Advanced Kit with the vendor image installed
+- A hexapod Advanced Kit with the vendor image installed
 - A Windows, macOS, or Linux laptop with Python 3.10 or newer
 - SSH access to the robot
 - A Wi-Fi network that both the robot and the laptop can join
@@ -33,7 +33,7 @@ The laptop requirements cover the recording client and local dataset writing.
 
 ## Install Robot Dependencies
 
-On the TurboPi:
+On the hexapod:
 
 ```bash
 python3 -m pip install -r requirements-robot.txt
@@ -42,8 +42,8 @@ python3 -m pip install -r requirements-robot.txt
 Important:
 
 - `ros_robot_controller_sdk` is not installed from `pip`
-- `cv2` is usually already present on the TurboPi image
-- this repo assumes you are using the normal TurboPi software image, not a clean Raspberry Pi install
+- `cv2` is usually already present on the hexapod image
+- this repo assumes you are using the normal hexapod software image, not a clean Raspberry Pi install
 
 If you prefer to do that from your laptop, use:
 
@@ -120,7 +120,7 @@ data/<dataset_name>/
 Example:
 
 ```text
-data/turbopi_nav/
+data/hexapod_nav/
 |-- raw/session_20260401_101500/
 `-- episodes/session_20260401_101500/
 ```
@@ -139,7 +139,7 @@ Train from the CNN episode root:
 
 ```bash
 python -m cnn_policy.train \
-  --episodes-dir data/turbopi_cnn/episodes \
+  --episodes-dir data/hexapod_cnn/episodes \
   --run-dir runs/cnn_v1
 ```
 
@@ -149,7 +149,7 @@ Evaluate a trained checkpoint:
 
 ```bash
 python -m cnn_policy.eval \
-  --episodes-dir data/turbopi_cnn/episodes \
+  --episodes-dir data/hexapod_cnn/episodes \
   --checkpoint <RUN_DIR>/checkpoints/best.pt
 ```
 
@@ -173,8 +173,8 @@ Then run:
 
 ```bash
 python scripts/export_lerobot.py \
-  --episodes-dir data/turbopi_nav/episodes \
-  --output-dir data/turbopi_nav/lerobot \
+  --episodes-dir data/hexapod_nav/episodes \
+  --output-dir data/hexapod_nav/lerobot \
   --repo-id <HF_DATASET_REPO>
 ```
 
@@ -189,7 +189,7 @@ The default `--state-source shifted_action` is important. It reconstructs `obser
 
 Helpful notes:
 
-- `--episodes-dir` can be the full `data/turbopi_nav/episodes` folder or one specific `session_YYYYMMDD_HHMMSS` folder.
+- `--episodes-dir` can be the full `data/hexapod_nav/episodes` folder or one specific `session_YYYYMMDD_HHMMSS` folder.
 - The exporter includes every accepted `episode_*` folder under that path.
 - If one episode is clearly bad, delete that episode folder before exporting.
 - LeRobot often stores exported frames as chunked dataset videos rather than one MP4 per episode.

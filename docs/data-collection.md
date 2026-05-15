@@ -1,6 +1,6 @@
 # Data Collection Guide
 
-This repo records teleoperated episodes from a laptop while the TurboPi runs the robot server.
+This repo records teleoperated episodes from a laptop while the hexapod runs the robot server.
 
 If you are building the separate CNN workflow, see [CNN Dataset And Training Guide](cnn.md). That path uses its own dataset root and recording rules.
 
@@ -87,7 +87,7 @@ The client creates a fresh timestamped session folder every time you run it.
 Example layout:
 
 ```text
-data/turbopi_nav/
+data/hexapod_nav/
 |-- raw/
 |   `-- session_20260401_101500/
 |       |-- session_info.json
@@ -136,8 +136,8 @@ Accepted episodes can be converted into a LeRobot-compatible dataset:
 pip install -r requirements-export.txt
 
 python scripts/export_lerobot.py \
-  --episodes-dir data/turbopi_nav/episodes \
-  --output-dir data/turbopi_nav/lerobot \
+  --episodes-dir data/hexapod_nav/episodes \
+  --output-dir data/hexapod_nav/lerobot \
   --repo-id <HF_DATASET_REPO>
 ```
 
@@ -168,8 +168,8 @@ Example: export one cleaned session only
 
 ```bash
 python scripts/export_lerobot.py \
-  --episodes-dir data/turbopi_nav/episodes/session_20260402_114217 \
-  --output-dir data/turbopi_nav/lerobot_session_20260402_114217 \
+  --episodes-dir data/hexapod_nav/episodes/session_20260402_114217 \
+  --output-dir data/hexapod_nav/lerobot_session_20260402_114217 \
   --state-source shifted_action \
   --overwrite
 ```
@@ -179,7 +179,7 @@ python scripts/export_lerobot.py \
 CNN data is intentionally separate from VLA data:
 
 ```text
-data/turbopi_cnn/
+data/hexapod_cnn/
 ```
 
 Install the CNN extras:
@@ -192,7 +192,7 @@ Train:
 
 ```bash
 python -m cnn_policy.train \
-  --episodes-dir data/turbopi_cnn/episodes \
+  --episodes-dir data/hexapod_cnn/episodes \
   --run-dir runs/cnn_v1
 ```
 
@@ -200,7 +200,7 @@ Evaluate:
 
 ```bash
 python -m cnn_policy.eval \
-  --episodes-dir data/turbopi_cnn/episodes \
+  --episodes-dir data/hexapod_cnn/episodes \
   --checkpoint <RUN_DIR>/checkpoints/best.pt
 ```
 
@@ -217,7 +217,7 @@ python -m cnn_policy.drive \
 If you record two test episodes such as "go left" and "go right", you can inspect exactly what was saved:
 
 ```bash
-python scripts/inspect_episode.py --episodes-dir data/turbopi_nav/episodes
+python scripts/inspect_episode.py --episodes-dir data/hexapod_nav/episodes
 ```
 
 Useful things this reports:
@@ -233,8 +233,8 @@ If you want a CSV for manual inspection:
 
 ```bash
 python scripts/inspect_episode.py \
-  --episodes-dir data/turbopi_nav/episodes \
-  --csv data/turbopi_nav/inspection.csv
+  --episodes-dir data/hexapod_nav/episodes \
+  --csv data/hexapod_nav/inspection.csv
 ```
 
 ## Practical Tips

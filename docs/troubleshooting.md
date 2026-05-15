@@ -39,11 +39,11 @@ Also make sure you are running the client locally on the laptop desktop session,
 
 ## The robot server fails with `ros_robot_controller_sdk` missing
 
-Run the server on the TurboPi image that ships with the robot, or on an environment where the Hiwonder SDK is already installed. This dependency is hardware-specific and is not installed from `pip`.
+Run the server on the hexapod image that ships with the robot, or on an environment where the Hiwonder SDK is already installed. This dependency is hardware-specific and is not installed from `pip`.
 
 ## The robot server fails with `cv2` missing
 
-Most TurboPi images already provide OpenCV. If yours does not, fix the robot image first instead of assuming `pip install opencv-python` will be reliable on the robot.
+Most hexapod images already provide OpenCV. If yours does not, fix the robot image first instead of assuming `pip install opencv-python` will be reliable on the robot.
 
 ## The camera does not open
 
@@ -81,7 +81,7 @@ That warning means training can still run, but true validation is skipped becaus
 
 Fix:
 
-- collect at least one more `session_YYYYMMDD_HHMMSS` under `data/turbopi_cnn/episodes/`
+- collect at least one more `session_YYYYMMDD_HHMMSS` under `data/hexapod_cnn/episodes/`
 - then train from the full CNN episodes root instead of one specific session folder
 
 ## LeRobot export fails

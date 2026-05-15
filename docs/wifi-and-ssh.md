@@ -14,7 +14,7 @@ The short version:
 
 In AP mode, the robot creates its own hotspot. This is useful when you first power it on because you can always get into the robot even if you do not know any LAN IP yet.
 
-Typical defaults on TurboPi Advanced images:
+Typical defaults on hexapod Advanced images:
 
 - Hotspot name starts with `HW`
 - Hotspot password is `hiwonder`
@@ -99,7 +99,7 @@ cd ~/hiwonder-toolbox
 sudo nano wifi_conf.py
 ```
 
-Many TurboPi Advanced images expose settings similar to:
+Many hexapod Advanced images expose settings similar to:
 
 ```python
 HW_WIFI_MODE = 2
@@ -140,5 +140,5 @@ Once both devices are on the same network, you can SSH, install packages, start 
 
 ## References
 
-- [Hiwonder TurboPi network setup](https://docs.hiwonder.com/projects/TurboPi/en/advanced/docs/7.network_configuration.html)
-- [Hiwonder TurboPi getting ready](https://docs.hiwonder.com/projects/TurboPi/en/latest/docs/1.getting_ready.html)
+- [Hiwonder hexapod network setup](https://docs.hiwonder.com/projects/hexapod/en/advanced/docs/7.network_configuration.html)
+- [Hiwonder hexapod getting ready](https://docs.hiwonder.com/projects/hexapod/en/latest/docs/1.getting_ready.html)

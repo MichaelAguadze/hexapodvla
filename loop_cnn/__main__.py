@@ -9,7 +9,7 @@ def main() -> None:
     print(
         textwrap.dedent(
             """
-            TurboPi CNN policy package
+            hexapod CNN policy package
 
             Use one of:
               python -m loop_cnn.train --help

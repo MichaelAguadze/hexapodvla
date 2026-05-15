@@ -7,12 +7,12 @@ import argparse
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser for the launcher."""
-    parser = argparse.ArgumentParser(description="TurboPi Client Launcher")
+    parser = argparse.ArgumentParser(description="hexapod Client Launcher")
     parser.add_argument("--robot-ip", default="192.168.149.1")
     parser.add_argument("--robot-port", type=int, default=8081)
-    parser.add_argument("--dataset", default="turbopi_nav",
+    parser.add_argument("--dataset", default="hexapod_nav",
                         help="Dataset name for the VLA recorder")
-    parser.add_argument("--cnn-dataset", default="turbopi_cnn",
+    parser.add_argument("--cnn-dataset", default="hexapod_cnn",
                         help="Dataset name for the CNN recorder")
     parser.add_argument("--repo-id", default="<HF_DATASET_REPO>")
     parser.add_argument("--fps", type=int, default=10)
@@ -76,7 +76,7 @@ def main() -> None:
 
     print()
     print("=" * 50)
-    print("  TurboPi Client Launcher")
+    print("  hexapod Client Launcher")
     print("=" * 50)
 
     selection = _prompt_menu("Recording Modes", ["CNN-based", "VLA-based"])

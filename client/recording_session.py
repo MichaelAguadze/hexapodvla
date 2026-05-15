@@ -78,7 +78,7 @@ class RecordingSession:
         """Main recording loop that records episodes until stopped."""
         print()
         print("=" * 50)
-        print("  TurboPi VLA Recording Session")
+        print("  hexapod VLA Recording Session")
         print("=" * 50)
 
         print("\n  Connecting to robot...")

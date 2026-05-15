@@ -1,4 +1,4 @@
-"""Teleop-only entry point for driving the TurboPi without recording."""
+"""Teleop-only entry point for driving the hexapod without recording."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from .teleop_controller import TeleopController
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser for teleop-only mode."""
-    parser = argparse.ArgumentParser(description="TurboPi teleop-only client")
+    parser = argparse.ArgumentParser(description="hexapod teleop-only client")
     parser.add_argument("--robot-ip", default="192.168.149.1")
     parser.add_argument("--robot-port", type=int, default=8081)
     parser.add_argument("--speed", type=float, default=50.0,
@@ -75,7 +75,7 @@ def main() -> None:
 
     print()
     print("=" * 50)
-    print("  TurboPi Teleop")
+    print("  hexapod Teleop")
     print("=" * 50)
     print(f"  Robot: {robot_url}")
     print()

@@ -86,7 +86,7 @@ class CNNLoopSession:
         """Main loop that records one accepted lap per episode."""
         print()
         print("=" * 50)
-        print("  TurboPi CNN Dataset Recorder")
+        print("  hexapod CNN Dataset Recorder")
         print("=" * 50)
 
         print("\n  Connecting to robot...")

@@ -79,7 +79,7 @@ CNN data should live in its own dataset root, separate from the VLA recordings.
 Example layout:
 
 ```text
-data/turbopi_cnn/
+data/hexapod_cnn/
 |-- raw/
 |   `-- session_YYYYMMDD_HHMMSS/
 |       |-- session_info.json
@@ -94,7 +94,7 @@ data/turbopi_cnn/
             `-- video.mp4
 ```
 
-If you already recorded under the older `data/turbopi_cnn_loop/` path, that older layout still works.
+If you already recorded under the older `data/hexapod_cnn_loop/` path, that older layout still works.
 
 ## What The CNN Sees
 
@@ -148,7 +148,7 @@ pip install -r requirements-cnn.txt
 Train from the accepted CNN episode root:
 
 ```bash
-python -m cnn_policy.train --episodes-dir data/turbopi_cnn/episodes --run-dir runs/cnn_v1
+python -m cnn_policy.train --episodes-dir data/hexapod_cnn/episodes --run-dir runs/cnn_v1
 ```
 
 The trainer prints a concrete child run such as `runs/cnn_v1/run_YYYYMMDD_HHMMSS`. Use that full folder as `<RUN_DIR>` for evaluation and driving.
@@ -164,7 +164,7 @@ Training defaults:
 ## Evaluation Command
 
 ```bash
-python -m cnn_policy.eval --episodes-dir data/turbopi_cnn/episodes --checkpoint <RUN_DIR>/checkpoints/best.pt
+python -m cnn_policy.eval --episodes-dir data/hexapod_cnn/episodes --checkpoint <RUN_DIR>/checkpoints/best.pt
 ```
 
 ## Inference Command
