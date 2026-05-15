@@ -1,0 +1,5 @@
+# Extra dependencies for converting recorded episodes into LeRobot format
+lerobot
+pandas>=2.2
+pyarrow>=15.0
+av>=12.0

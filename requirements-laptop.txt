@@ -1,0 +1,8 @@
+# Laptop-side dependencies for the recording client
+numpy>=1.26
+pandas>=2.2
+pyarrow>=15.0
+requests>=2.31
+Pillow>=10.0
+pynput>=1.7
+av>=12.0

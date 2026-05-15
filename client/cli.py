@@ -10,9 +10,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Hexapod Client Launcher")
     parser.add_argument("--robot-ip", default="192.168.149.1")
     parser.add_argument("--robot-port", type=int, default=8081)
-    parser.add_argument("--dataset", default="Hexapod_nav",
+    parser.add_argument("--dataset", default="hexapod_nav",
                         help="Dataset name for the VLA recorder")
-    parser.add_argument("--cnn-dataset", default="Hexapod_cnn",
+    parser.add_argument("--cnn-dataset", default="hexapod_cnn",
                         help="Dataset name for the CNN recorder")
     parser.add_argument("--repo-id", default="<HF_DATASET_REPO>")
     parser.add_argument("--fps", type=int, default=10)

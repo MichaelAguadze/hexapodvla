@@ -1,0 +1,4 @@
+# Robot-side Python dependencies for the hexapod server
+# `ros_robot_controller_sdk` and `cv2` are typically provided by the hexapod image.
+flask>=3.0
+netifaces>=0.11
