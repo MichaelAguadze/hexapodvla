@@ -1,0 +1,16 @@
+[Unit]
+Description=hexapod Robot Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/robot_server
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/bin/bash -lc 'exec /usr/bin/python3 /home/pi/robot_server/server.py --port 8080 >> /tmp/robot_server.log 2>&1'
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
