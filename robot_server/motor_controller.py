@@ -50,8 +50,8 @@ except ImportError:
 # hexapod ROS parameter server (loaded from the hexapod YAML config).
 # Duty values are normalised against max_duty before scaling to SI units.
 # ---------------------------------------------------------------------------
-_MAX_LINEAR_MS   = 0.3   # m/s   — typical hexapod forward speed at max_duty
-_MAX_ANGULAR_RDS = 1.3   # rad/s — typical hexapod yaw rate at max_duty
+_MAX_LINEAR_MS   = 0.050   # matches MAX_METERS_PER_SEC
+_MAX_ANGULAR_RDS = 0.308   # matches MAX_RADIANS_PER_SEC (~17.629 degrees)
 
 
 class MotorController:
