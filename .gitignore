@@ -24,3 +24,6 @@ runs/
 .idea/
 .DS_Store
 Thumbs.db
+
+#External files
+source_code/

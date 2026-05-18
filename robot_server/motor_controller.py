@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
-"""Motor controller wrapper for the Leo Rover (ROS 1).
+"""Motor controller for the XiaoRGEEK hexapod robot (ROS 1).
 
-Replaces the hexapod `ros_robot_controller_sdk` backend with ROS 1 topics:
-  - /cmd_vel                          (geometry_msgs/Twist)  — body velocity
-  - /firmware/wheel_*/cmd_velocity    (std_msgs/Float32)     — per-wheel (rad/s)
-  - /firmware/battery                 (std_msgs/Float32)     — battery voltage (V)
+Publishes to topics consumed by the hexapod_controller C++ node:
+  - /cmd_vel       (geometry_msgs/Twist)        — locomotion
+  - /state         (std_msgs/Bool)               — stand (True) / sit (False)
+  - /head_scalar   (geometry_msgs/AccelStamped)  — camera pan / tilt
+  - /body_scalar   (geometry_msgs/AccelStamped)  — body orientation override
 
-Duty values (-max_duty … +max_duty) are scaled to SI units before publishing.
-All hexapod-specific features (servos, buzzer, RGB LEDs) become no-ops so
-server.py requires no changes.
+Subscribes to:
+  - /imu/data      (sensor_msgs/Imu)             — IMU readings
+
+Axis-swap note
+--------------
+The hexapod_controller cmd_velCallback negates and swaps axes before passing
+them into the gait engine:
+  gait forward ← -angular_z_in  (scaled by maxRadiansPerSec → maxMeterPerSec)
+  gait turning ← -linear_x_in   (scaled by maxMeterPerSec  → maxRadiansPerSec)
+  gait strafe  ←  linear_y_in   (passed through unchanged)
+
+set_velocity() compensates for this so that vx>0 always means forward,
+omega>0 always means left turn, and vy>0 always means strafe left.
 
 Run server.py inside a sourced ROS 1 environment:
     source /opt/ros/noetic/setup.bash
@@ -17,79 +28,84 @@ Run server.py inside a sourced ROS 1 environment:
 
 from __future__ import annotations
 
+import math
 import threading
 import time
 
-# ROS 1 packages — available on the Leo Rover but not in the laptop venv.
-# IDE "unresolved import" warnings here are expected and can be ignored.
 import rospy  # type: ignore[import-untyped]
-from geometry_msgs.msg import Twist  # type: ignore[import-untyped]
-from std_msgs.msg import Float32  # type: ignore[import-untyped]
+from geometry_msgs.msg import AccelStamped, Twist  # type: ignore[import-untyped]
+from sensor_msgs.msg import Imu  # type: ignore[import-untyped]
+from std_msgs.msg import Bool  # type: ignore[import-untyped]
+
+try:
+    from hexapod_msgs.msg import Sounds as _HexSounds  # type: ignore[import-untyped]
+    _HEXAPOD_MSGS = True
+except ImportError:
+    _HEXAPOD_MSGS = False
 
 
 # ---------------------------------------------------------------------------
 # Scaling constants
-# Leo Rover max linear speed ≈ 0.4 m/s; max angular speed ≈ 1.0 rad/s.
-# Duty values are normalised against max_duty (default 80) to these limits.
+# These should match MAX_METERS_PER_SEC and MAX_RADIANS_PER_SEC in the
+# hexapod ROS parameter server (loaded from the hexapod YAML config).
+# Duty values are normalised against max_duty before scaling to SI units.
 # ---------------------------------------------------------------------------
-_MAX_LINEAR_MS   = 0.4   # m/s  at duty == max_duty
-_MAX_ANGULAR_RDS = 1.0   # rad/s at duty == max_duty
-_WHEEL_RADIUS_M  = 0.065 # metres — used to convert linear m/s → wheel rad/s
-
-
-def mecanum_ik(vx: float, vy: float, omega: float) -> list[list]:
-    """Return per-wheel duty values for logging compatibility.
-
-    Leo Rover firmware handles the actual IK via /cmd_vel, so this is only
-    used to produce a wheel-duty log entry that matches the hexapod format.
-    """
-    v1 = vx - vy - omega
-    v2 = vx + vy + omega
-    v3 = vx + vy - omega
-    v4 = vx - vy + omega
-    return [[1, -v1], [2, v2], [3, -v3], [4, v4]]
-
-
-# Wheel index → Leo Rover topic suffix (matches hexapod wheel ID order)
-_WHEEL_TOPICS = {1: "FL", 2: "FR", 3: "RL", 4: "RR"}
+_MAX_LINEAR_MS   = 0.3   # m/s   — typical hexapod forward speed at max_duty
+_MAX_ANGULAR_RDS = 1.3   # rad/s — typical hexapod yaw rate at max_duty
 
 
 class MotorController:
-    """Thread-safe motor controller for Leo Rover via ROS 1 (rospy)."""
+    """Thread-safe motor controller for the XiaoRGEEK hexapod via ROS 1."""
 
-    def __init__(self, max_duty: float = 80.0):
+    def __init__(self, max_duty: float = 80.0, auto_stand: bool = True):
         self.max_duty = max_duty
         self._lock = threading.Lock()
         self._last_command_time = time.monotonic()
-        self._battery_mv: int | None = None
+        self._imu_data: tuple[float, float, float] | None = None
 
         rospy.init_node("turbovla_motor_controller", anonymous=False,
                         disable_signals=True)
 
-        # Body velocity publisher
         self._cmd_vel_pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
+        self._state_pub   = rospy.Publisher("/state", Bool, queue_size=10)
+        self._head_pub    = rospy.Publisher("/head_scalar", AccelStamped, queue_size=10)
+        self._body_pub    = rospy.Publisher("/body_scalar", AccelStamped, queue_size=10)
 
-        # Per-wheel velocity publishers (rad/s)
-        self._wheel_pubs = {
-            idx: rospy.Publisher(
-                f"/firmware/wheel_{name}/cmd_velocity", Float32, queue_size=10
-            )
-            for idx, name in _WHEEL_TOPICS.items()
-        }
+        if _HEXAPOD_MSGS:
+            self._sounds_pub = rospy.Publisher("/sounds", _HexSounds, queue_size=10)
+        else:
+            self._sounds_pub = None
 
-        # Battery subscriber — Leo Rover publishes Volts as Float32
-        rospy.Subscriber("/firmware/battery", Float32, self._battery_cb)
+        rospy.Subscriber("/imu/data", Imu, self._imu_cb)
 
-        # Spin in a background daemon thread so callbacks are processed
         self._spin_thread = threading.Thread(target=rospy.spin, daemon=True)
         self._spin_thread.start()
+
+        # Give publishers time to register with the master before first command.
+        rospy.sleep(0.5)
+
+        if auto_stand:
+            self.stand()
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _battery_cb(self, msg: Float32) -> None:
-        self._battery_mv = int(msg.data * 1000)
+    def _imu_cb(self, msg: Imu) -> None:
+        q = msg.orientation
+        sinr = 2.0 * (q.w * q.x + q.y * q.z)
+        cosr = 1.0 - 2.0 * (q.x * q.x + q.y * q.y)
+        roll = math.atan2(sinr, cosr)
+
+        sinp = 2.0 * (q.w * q.y - q.z * q.x)
+        pitch = (math.copysign(math.pi / 2.0, sinp)
+                 if abs(sinp) >= 1.0 else math.asin(sinp))
+
+        siny = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        yaw = math.atan2(siny, cosy)
+
+        self._imu_data = (roll, pitch, yaw)
 
     def _clamp(self, value: float) -> float:
         return max(-self.max_duty, min(self.max_duty, value))
@@ -100,59 +116,58 @@ class MotorController:
     def _duty_to_angular(self, duty: float) -> float:
         return duty / self.max_duty * _MAX_ANGULAR_RDS
 
-    def _duty_to_wheel_rads(self, duty: float) -> float:
-        return self._duty_to_linear(duty) / _WHEEL_RADIUS_M
+    # ------------------------------------------------------------------
+    # Hexapod-specific stand / sit
+    # ------------------------------------------------------------------
+
+    def stand(self) -> None:
+        """Publish True on /state to trigger the hexapod stand-up sequence."""
+        with self._lock:
+            self._state_pub.publish(Bool(data=True))
+
+    def sit(self) -> None:
+        """Publish False on /state to trigger the hexapod sit-down sequence."""
+        with self._lock:
+            self._state_pub.publish(Bool(data=False))
 
     # ------------------------------------------------------------------
-    # Public motor API (identical signature to hexapod version)
+    # Public motor API (identical signature to the Leo Rover version)
     # ------------------------------------------------------------------
 
     def set_velocity(self, vx: float, vy: float, omega: float) -> list[list]:
-        """Send a body velocity command.
+        """Send a body velocity command to the hexapod.
 
         Args:
             vx:    forward/backward duty (-max_duty … +max_duty)
-            vy:    strafe left/right duty (Leo Rover ignores this — diff drive)
-            omega: rotation duty
+            vy:    strafe left/right duty (hexapod supports lateral motion)
+            omega: rotation duty (positive = counter-clockwise / left turn)
 
         Returns:
-            Per-wheel duty list for logging (same format as hexapod).
+            Per-leg duty list for logging (6 legs, simplified).
         """
         vx    = self._clamp(vx)
         vy    = self._clamp(vy)
         omega = self._clamp(omega)
 
-        # Leo Rover is differential drive — vy (strafe) is impossible, so fold it
-        # into angular.z rotation.  omega (explicit rotate) takes priority; vy
-        # is only used when omega is zero so the two commands don't stack.
-        effective_omega = omega if omega != 0.0 else vy
-
+        # The hexapod_controller cmd_velCallback negates and swaps linear.x ↔
+        # angular.z before passing them to the gait engine.  We pre-compensate
+        # so that the caller's semantics (vx=forward, omega=left-turn) are
+        # preserved: publish -omega on linear.x and -vx on angular.z.
         twist = Twist()
-        twist.linear.x  = self._duty_to_linear(vx)
-        twist.angular.z = self._duty_to_angular(effective_omega)
+        twist.linear.x  = -self._duty_to_linear(omega)   # → gait turning
+        twist.linear.y  =  self._duty_to_linear(vy)       # → gait strafe
+        twist.angular.z = -self._duty_to_angular(vx)      # → gait forward
 
         with self._lock:
             self._cmd_vel_pub.publish(twist)
             self._last_command_time = time.monotonic()
 
-        return mecanum_ik(vx, vy, omega)
+        # Return 6-leg pseudo-duty list for logging compatibility.
+        norm = vx / self.max_duty if self.max_duty else 0.0
+        return [[i + 1, norm] for i in range(6)]
 
     def set_raw_wheels(self, wheels: list[list]) -> None:
-        """Send per-wheel velocity commands.
-
-        Args:
-            wheels: [[1, duty1], [2, duty2], [3, duty3], [4, duty4]]
-                    Wheel IDs: 1=FL, 2=FR, 3=RL, 4=RR
-        """
-        with self._lock:
-            for wheel_id, duty in wheels:
-                duty = self._clamp(duty)
-                msg = Float32()
-                msg.data = float(self._duty_to_wheel_rads(duty))
-                pub = self._wheel_pubs.get(wheel_id)
-                if pub:
-                    pub.publish(msg)
-            self._last_command_time = time.monotonic()
+        """No-op: hexapod has no individually-driven wheels."""
 
     def stop(self) -> None:
         """Emergency stop — publish zero Twist."""
@@ -165,28 +180,55 @@ class MotorController:
     # ------------------------------------------------------------------
 
     def get_battery_mv(self) -> int | None:
-        """Battery voltage in millivolts (from /firmware/battery topic)."""
-        return self._battery_mv
-
-    def get_imu(self) -> tuple | None:
-        """IMU data is available via /firmware/imu — not polled here."""
+        """Battery voltage in millivolts. Not published by the hexapod stack."""
         return None
 
+    def get_imu(self) -> tuple[float, float, float] | None:
+        """Latest IMU reading as (roll, pitch, yaw) in radians, or None."""
+        return self._imu_data
+
     # ------------------------------------------------------------------
-    # No-ops: hardware not present on Leo Rover
+    # Servos / head pan-tilt
     # ------------------------------------------------------------------
 
     def center_servos(self) -> None:
-        """No-op: Leo Rover has no pan-tilt servos."""
+        """Center the camera pan-tilt by publishing zero AccelStamped."""
+        msg = AccelStamped()
+        msg.header.stamp = rospy.Time.now()
+        with self._lock:
+            self._head_pub.publish(msg)
 
-    def set_servos(self, *_) -> None:
-        """No-op: Leo Rover has no pan-tilt servos."""
+    def set_servos(self, pan: float = 0.0, tilt: float = 0.0, *_) -> None:
+        """Command the camera pan/tilt servos via /head_scalar.
+
+        Args:
+            pan:  horizontal angle duty (-max_duty … +max_duty).
+                  Maps to accel.angular.z; scaled to [-1, 1] for HEAD_MAX_YAW.
+            tilt: vertical angle duty (-max_duty … +max_duty).
+                  Maps to accel.angular.y; scaled to [-1, 1] for HEAD_MAX_PITCH.
+        """
+        pan  = self._clamp(pan)
+        tilt = self._clamp(tilt)
+
+        msg = AccelStamped()
+        msg.header.stamp    = rospy.Time.now()
+        msg.accel.angular.z = pan  / self.max_duty   # normalised [-1, 1]
+        msg.accel.angular.y = tilt / self.max_duty
+
+        with self._lock:
+            self._head_pub.publish(msg)
 
     def beep(self, *_) -> None:
-        """No-op: Leo Rover has no buzzer."""
+        """Trigger a hexapod sound via /sounds (requires hexapod_msgs)."""
+        if self._sounds_pub is None:
+            return
+        msg = _HexSounds()
+        msg.stand = True
+        with self._lock:
+            self._sounds_pub.publish(msg)
 
     def set_rgb(self, *_) -> None:
-        """No-op: Leo Rover has no onboard RGB LEDs."""
+        """No-op: hexapod has no onboard RGB LEDs."""
 
     # ------------------------------------------------------------------
     # Watchdog support
@@ -202,5 +244,7 @@ class MotorController:
     # ------------------------------------------------------------------
 
     def shutdown(self) -> None:
-        """Signal ROS 1 node shutdown."""
+        """Sit the hexapod down, then signal ROS 1 node shutdown."""
+        self.sit()
+        rospy.sleep(0.5)
         rospy.signal_shutdown("turbovla server shutting down")
