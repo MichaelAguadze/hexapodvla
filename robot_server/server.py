@@ -34,7 +34,7 @@ import cv2
 from flask import Flask, Response, request, jsonify
 
 # Import our modules from the same directory
-from motor_controller import MotorController, mecanum_ik
+from motor_controller import MotorController
 from health_monitor import HealthMonitor
 
 

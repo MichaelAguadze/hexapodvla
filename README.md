@@ -50,10 +50,10 @@ pip install -r requirements-laptop.txt
 4. SSH into the robot:
 
 ```bash
-ssh pi@192.168.149.1
+ssh xrrobot@192.168.88.100
 ```
 
-The default username is usually `pi`. Many stock images use `raspberrypi` as the password.
+The default username is usually `xrrobot`. Many stock images use `xrrobot` as the password.
 
 ### 3. Move the robot onto your shared Wi-Fi
 
@@ -61,7 +61,7 @@ Once you are inside the robot:
 
 ```bash
 nmcli dev wifi list
-sudo nmcli device wifi connect "Vizuara" password "vizuara112358"
+sudo nmcli device wifi connect ""
 ```
 
 Your SSH session will usually disconnect right away. That is normal because the robot is leaving hotspot mode and joining the shared network.
@@ -77,7 +77,7 @@ Reconnect your laptop to the same Wi-Fi and find the robot IP with one of these 
 Then SSH back in:
 
 ```bash
-ssh pi@<ROBOT_IP>
+ssh xrrobot@<ROBOT_IP>
 ```
 
 ### 5. Install robot-side Python packages
