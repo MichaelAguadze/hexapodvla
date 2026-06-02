@@ -352,15 +352,15 @@ def main():
     print("[Init] Motor controller...")
     mc = MotorController(max_duty=args.max_duty)
 
-    # Initialize camera
+    # Initialize camera (non-fatal — motor control works without it)
     print("[Init] Camera...")
     camera = CameraCapture(device=args.camera, jpeg_quality=args.jpeg_quality)
     if not camera.start():
-        print("[FATAL] Camera failed to open. Exiting.")
-        sys.exit(1)
+        print("[WARNING] Camera failed to open. /stream and /snapshot will return 503.")
 
-    # Wait for first frame
-    time.sleep(0.5)
+    # Wait for first frame if camera started
+    if camera.is_alive:
+        time.sleep(0.5)
 
     # Initialize health monitor
     print("[Init] Health monitor...")
