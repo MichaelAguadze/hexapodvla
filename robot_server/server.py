@@ -58,25 +58,35 @@ class CameraCapture:
         self._running = False
         self._thread = None  # type: Optional[threading.Thread]
         self._cap = None  # type: Optional[object]
+        self._use_openni = False
 
     def start(self) -> bool:
         """Start camera capture. Returns True if camera opened successfully."""
-        # Kill any process holding the camera
-        os.system(f"sudo fuser -k /dev/video{self.device} 2>/dev/null")
+        # Try standard V4L2 first
+        os.system("sudo fuser -k /dev/video{} 2>/dev/null".format(self.device))
         time.sleep(0.5)
 
         self._cap = cv2.VideoCapture(self.device)
+        self._use_openni = False
+
         if not self._cap.isOpened():
-            print(f"[Camera] ERROR: Cannot open /dev/video{self.device}")
+            print("[Camera] V4L2 failed, trying OpenNI2 (Orbbec)...")
+            self._cap = cv2.VideoCapture(self.device, cv2.CAP_OPENNI2)
+            self._use_openni = True
+
+        if not self._cap.isOpened():
+            print("[Camera] ERROR: Cannot open camera via V4L2 or OpenNI2")
             return False
 
-        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        self._cap.set(cv2.CAP_PROP_FPS, self.fps)
-
-        actual_w = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        actual_h = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        print(f"[Camera] Opened /dev/video{self.device} at {actual_w}x{actual_h}")
+        if not self._use_openni:
+            self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+            self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+            self._cap.set(cv2.CAP_PROP_FPS, self.fps)
+            actual_w = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            actual_h = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            print("[Camera] Opened /dev/video{} at {}x{}".format(self.device, actual_w, actual_h))
+        else:
+            print("[Camera] Opened via OpenNI2 (Orbbec color stream)")
 
         self._running = True
         self._thread = threading.Thread(target=self._capture_loop, daemon=True)
@@ -93,9 +103,17 @@ class CameraCapture:
 
     def _capture_loop(self) -> None:
         """Continuously capture frames."""
+        # OpenNI2 color channel index (5 = CAP_OPENNI_BGR_IMAGE)
+        _OPENNI_BGR = getattr(cv2, 'CAP_OPENNI_BGR_IMAGE', 5)
         while self._running:
-            ret, frame = self._cap.read()
-            if not ret:
+            if self._use_openni:
+                if not self._cap.grab():
+                    time.sleep(0.01)
+                    continue
+                ret, frame = self._cap.retrieve(_OPENNI_BGR)
+            else:
+                ret, frame = self._cap.read()
+            if not ret or frame is None:
                 time.sleep(0.01)
                 continue
 
