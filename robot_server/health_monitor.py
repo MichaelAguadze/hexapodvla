@@ -11,6 +11,7 @@ Sets RGB LEDs to indicate state and triggers buzzer on low battery.
 """
 import threading
 import time
+from typing import Optional
 
 
 # Battery thresholds (millivolts)
@@ -38,7 +39,7 @@ class HealthMonitor:
         self.status: str = "unknown"  # "ok", "warn", "low", "critical"
 
         self._running = False
-        self._thread: threading.Thread | None = None
+        self._thread = None  # type: Optional[threading.Thread]
         self._warned = False
 
     def start(self) -> None:

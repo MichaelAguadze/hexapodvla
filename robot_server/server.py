@@ -19,8 +19,6 @@ Endpoints:
 Usage:
     python3 server.py [--port 8080]
 """
-from __future__ import annotations
-
 import os
 import sys
 import time
@@ -29,6 +27,7 @@ import signal
 import argparse
 import threading
 from io import BytesIO
+from typing import Optional, Tuple
 
 import cv2
 from flask import Flask, Response, request, jsonify
@@ -51,14 +50,14 @@ class CameraCapture:
         self.fps = fps
         self.jpeg_quality = jpeg_quality
 
-        self._frame: bytes | None = None
+        self._frame = None  # type: Optional[bytes]
         self._raw_frame = None
-        self._timestamp: float = 0.0
-        self._frame_index: int = 0
+        self._timestamp = 0.0  # type: float
+        self._frame_index = 0  # type: int
         self._lock = threading.Lock()
         self._running = False
-        self._thread: threading.Thread | None = None
-        self._cap: cv2.VideoCapture | None = None
+        self._thread = None  # type: Optional[threading.Thread]
+        self._cap = None  # type: Optional[object]
 
     def start(self) -> bool:
         """Start camera capture. Returns True if camera opened successfully."""
@@ -118,7 +117,7 @@ class CameraCapture:
 
         print("[Camera] Capture loop ended")
 
-    def get_jpeg(self) -> tuple[bytes | None, float, int]:
+    def get_jpeg(self) -> Tuple[Optional[bytes], float, int]:
         """Get latest JPEG frame, timestamp, and frame index."""
         with self._lock:
             return self._frame, self._timestamp, self._frame_index
@@ -148,7 +147,7 @@ class MotorWatchdog:
         self.mc = motor_controller
         self.timeout = timeout
         self._running = False
-        self._thread: threading.Thread | None = None
+        self._thread = None  # type: Optional[threading.Thread]
 
     def start(self) -> None:
         self._running = True

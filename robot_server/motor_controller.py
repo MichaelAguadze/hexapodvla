@@ -26,11 +26,10 @@ Run server.py inside a sourced ROS 1 environment:
     python3 server.py
 """
 
-from __future__ import annotations
-
 import math
 import threading
 import time
+from typing import List, Optional, Tuple
 
 import rospy  # type: ignore[import-untyped]
 from geometry_msgs.msg import AccelStamped, Twist  # type: ignore[import-untyped]
@@ -61,7 +60,7 @@ class MotorController:
         self.max_duty = max_duty
         self._lock = threading.Lock()
         self._last_command_time = time.monotonic()
-        self._imu_data: tuple[float, float, float] | None = None
+        self._imu_data = None  # type: Optional[Tuple[float, float, float]]
 
         rospy.init_node("turbovla_motor_controller", anonymous=False,
                         disable_signals=True)
@@ -134,7 +133,7 @@ class MotorController:
     # Public motor API (identical signature to the Leo Rover version)
     # ------------------------------------------------------------------
 
-    def set_velocity(self, vx: float, vy: float, omega: float) -> list[list]:
+    def set_velocity(self, vx: float, vy: float, omega: float) -> List[list]:
         """Send a body velocity command to the hexapod.
 
         Args:
@@ -166,7 +165,7 @@ class MotorController:
         norm = vx / self.max_duty if self.max_duty else 0.0
         return [[i + 1, norm] for i in range(6)]
 
-    def set_raw_wheels(self, wheels: list[list]) -> None:
+    def set_raw_wheels(self, wheels: List[list]) -> None:
         """No-op: hexapod has no individually-driven wheels."""
 
     def stop(self) -> None:
@@ -179,11 +178,11 @@ class MotorController:
     # Health
     # ------------------------------------------------------------------
 
-    def get_battery_mv(self) -> int | None:
+    def get_battery_mv(self) -> Optional[int]:
         """Battery voltage in millivolts. Not published by the hexapod stack."""
         return None
 
-    def get_imu(self) -> tuple[float, float, float] | None:
+    def get_imu(self) -> Optional[Tuple[float, float, float]]:
         """Latest IMU reading as (roll, pitch, yaw) in radians, or None."""
         return self._imu_data
 
