@@ -43,12 +43,13 @@ class CameraCapture:
     """Background thread that captures camera frames."""
 
     def __init__(self, device: int = 0, width: int = 640, height: int = 480,
-                 fps: int = 30, jpeg_quality: int = 70):
+                 fps: int = 30, jpeg_quality: int = 70, flip: bool = False):
         self.device = device
         self.width = width
         self.height = height
         self.fps = fps
         self.jpeg_quality = jpeg_quality
+        self.flip = flip
 
         self._frame = None  # type: Optional[bytes]
         self._raw_frame = None
@@ -116,6 +117,9 @@ class CameraCapture:
             if not ret or frame is None:
                 time.sleep(0.01)
                 continue
+
+            if self.flip:
+                frame = cv2.rotate(frame, cv2.ROTATE_180)
 
             # Encode to JPEG
             ok, jpeg = cv2.imencode(
@@ -338,6 +342,8 @@ def main():
                         help='Maximum motor duty cycle')
     parser.add_argument('--jpeg-quality', type=int, default=70,
                         help='JPEG compression quality (0-100)')
+    parser.add_argument('--flip-camera', action='store_true',
+                        help='Rotate camera 180 degrees (camera mounted upside-down)')
     args = parser.parse_args()
 
     # Kill anything on our port
@@ -354,7 +360,8 @@ def main():
 
     # Initialize camera (non-fatal — motor control works without it)
     print("[Init] Camera...")
-    camera = CameraCapture(device=args.camera, jpeg_quality=args.jpeg_quality)
+    camera = CameraCapture(device=args.camera, jpeg_quality=args.jpeg_quality,
+                           flip=args.flip_camera)
     if not camera.start():
         print("[WARNING] Camera failed to open. /stream and /snapshot will return 503.")
 
