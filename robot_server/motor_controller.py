@@ -97,6 +97,13 @@ class MotorController:
         self._heartbeat_thread.start()
 
         if auto_stand:
+            # Sit first to ensure a clean state transition, then stand.
+            # This handles: robot already standing from a crashed session,
+            # robot mid-animation, or servos in an unknown state.
+            rospy.loginfo("Resetting to sit...")
+            self.sit()
+            rospy.sleep(3.0)
+            rospy.loginfo("Standing up...")
             self.stand()
 
     # ------------------------------------------------------------------

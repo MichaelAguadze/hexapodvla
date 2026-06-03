@@ -487,9 +487,11 @@ def main():
 
     # Graceful shutdown
     def shutdown(*_):
-        print("\n[Shutdown] Stopping motors...")
+        print("\n[Shutdown] Sitting robot down...")
+        mc.sit()
+        time.sleep(3.5)  # Wait for sit animation to complete
+        print("[Shutdown] Stopping motors...")
         mc.stop()
-        mc.set_rgb([[1, 0, 0, 0], [2, 0, 0, 0]])  # LEDs off
         print("[Shutdown] Stopping camera...")
         camera.stop()
         print("[Shutdown] Stopping watchdog...")
