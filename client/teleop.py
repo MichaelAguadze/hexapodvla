@@ -8,6 +8,7 @@ import time
 
 from .robot_client import RobotClient
 from .teleop_controller import TeleopController
+from .ps5_controller import PS5Controller
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -21,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Maximum teleop speed in duty units")
     parser.add_argument("--loop-hz", type=float, default=10.0,
                         help="How often to send velocity commands")
+    parser.add_argument("--controller", choices=["keyboard", "ps5"],
+                        default="keyboard",
+                        help="Input device: keyboard (default) or ps5")
+    parser.add_argument("--joystick-index", type=int, default=0,
+                        help="Pygame joystick index (for --controller ps5)")
     return parser
 
 
@@ -68,16 +74,25 @@ def main() -> None:
         timeout=1.0,
         max_retries=2,
     )
-    teleop = TeleopController(
-        speed=args.speed,
-        max_speed=args.max_duty,
-    )
+
+    if args.controller == "ps5":
+        teleop = PS5Controller(
+            speed=args.speed,
+            max_speed=args.max_duty,
+            joystick_index=args.joystick_index,
+        )
+    else:
+        teleop = TeleopController(
+            speed=args.speed,
+            max_speed=args.max_duty,
+        )
 
     print()
     print("=" * 50)
     print("  hexapod Teleop")
     print("=" * 50)
-    print(f"  Robot: {robot_url}")
+    print(f"  Robot:      {robot_url}")
+    print(f"  Controller: {args.controller.upper()}")
     print()
 
     print("  Checking robot connection...")
@@ -96,12 +111,24 @@ def main() -> None:
         f"Camera: {'OK' if health.get('camera_ok') else 'FAIL'}"
     )
     print()
-    print("  Controls:")
-    print("    WASD  = translate")
-    print("    Q/E   = rotate")
-    print("    +/-   = speed up/down")
-    print("    Space = stop movement")
-    print("    Esc   = exit teleop")
+
+    if args.controller == "ps5":
+        print("  Controls (PS5 DualSense):")
+        print("    Left  stick       = forward / strafe")
+        print("    Right stick X     = rotate")
+        print("    Cross (X) held    = emergency stop")
+        print("    R1 / L1           = speed up / down")
+        print("    Triangle          = accept episode")
+        print("    Square            = discard episode")
+        print("    Options           = exit teleop")
+        print("    Touchpad click    = confirm / enter")
+    else:
+        print("  Controls (keyboard):")
+        print("    WASD  = translate")
+        print("    Q/E   = rotate")
+        print("    +/-   = speed up/down")
+        print("    Space = stop movement")
+        print("    Esc   = exit teleop")
     print()
 
     teleop.start()
