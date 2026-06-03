@@ -27,6 +27,7 @@ Run server.py inside a sourced ROS 1 environment:
 """
 
 import math
+import subprocess
 import threading
 import time
 from typing import List, Optional, Tuple
@@ -61,6 +62,7 @@ class MotorController:
         self._lock = threading.Lock()
         self._last_command_time = time.monotonic()
         self._imu_data = None  # type: Optional[Tuple[float, float, float]]
+        self._hex_active = False
 
         rospy.init_node("turbovla_motor_controller", anonymous=False,
                         disable_signals=True)
@@ -80,8 +82,19 @@ class MotorController:
         self._spin_thread = threading.Thread(target=rospy.spin, daemon=True)
         self._spin_thread.start()
 
+        # Kill the joystick node — it continuously floods /state with False
+        # which prevents the hexapod from standing.
+        self._kill_joystick_node()
+
         # Give publishers time to register with the master before first command.
         rospy.sleep(0.5)
+
+        # State heartbeat: re-publish the active state at 2 Hz so the
+        # hexapod controller never drifts back to sitting.
+        self._heartbeat_thread = threading.Thread(
+            target=self._state_heartbeat, daemon=True
+        )
+        self._heartbeat_thread.start()
 
         if auto_stand:
             self.stand()
@@ -106,6 +119,28 @@ class MotorController:
 
         self._imu_data = (roll, pitch, yaw)
 
+    def _kill_joystick_node(self) -> None:
+        """Kill /Hexapod_Teleop_Joystick if running — it floods /state: False."""
+        try:
+            result = subprocess.run(
+                ["rosnode", "kill", "/Hexapod_Teleop_Joystick"],
+                capture_output=True, timeout=3,
+            )
+            if result.returncode == 0:
+                rospy.loginfo("Killed /Hexapod_Teleop_Joystick")
+                time.sleep(0.5)
+            else:
+                rospy.logwarn("Joystick node not found or already stopped")
+        except Exception as e:
+            rospy.logwarn("Could not kill joystick node: {}".format(e))
+
+    def _state_heartbeat(self) -> None:
+        """Re-publish /state at 2 Hz so it survives any competing publishers."""
+        while not rospy.is_shutdown():
+            with self._lock:
+                self._state_pub.publish(Bool(data=self._hex_active))
+            time.sleep(0.5)
+
     def _clamp(self, value: float) -> float:
         return max(-self.max_duty, min(self.max_duty, value))
 
@@ -122,11 +157,13 @@ class MotorController:
     def stand(self) -> None:
         """Publish True on /state to trigger the hexapod stand-up sequence."""
         with self._lock:
+            self._hex_active = True
             self._state_pub.publish(Bool(data=True))
 
     def sit(self) -> None:
         """Publish False on /state to trigger the hexapod sit-down sequence."""
         with self._lock:
+            self._hex_active = False
             self._state_pub.publish(Bool(data=False))
 
     # ------------------------------------------------------------------
