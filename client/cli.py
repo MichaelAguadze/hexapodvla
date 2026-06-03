@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--data-dir", default="data")
     parser.add_argument("--tasks", nargs="+", default=None,
                         help="Custom VLA task list (overrides defaults)")
-    parser.add_argument("--mode", choices=["launcher", "cnn", "vla"], default="launcher")
+    parser.add_argument("--mode", choices=["launcher", "cnn", "vla", "line-follow"], default="launcher")
     parser.add_argument("--cnn-intent", choices=["language", "no-language"], default=None)
     parser.add_argument("--cnn-task", default=None,
                         help="Internal CNN task selector; public mode uses dataset-recording")
@@ -61,6 +61,11 @@ def main() -> None:
     """Run the top-level launcher."""
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.mode == "line-follow":
+        from .line_follow import main as run_line_follow
+        run_line_follow()
+        return
 
     if args.mode == "vla":
         from .vla_cli import run_from_args as run_vla
