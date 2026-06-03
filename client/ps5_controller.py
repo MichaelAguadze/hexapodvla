@@ -31,9 +31,10 @@ except ImportError:
     raise ImportError("pygame is required: pip install pygame")
 
 # DualSense axis indices (SDL2 / pygame on macOS & Linux)
-_AXIS_LX = 0    # left  stick horizontal
-_AXIS_LY = 1    # left  stick vertical   (up = negative)
-_AXIS_RX = 2    # right stick horizontal
+# On macOS the DualSense reports: axes 0,1 = right stick; axes 2,3 = left stick
+_AXIS_LX = 2    # left  stick horizontal
+_AXIS_LY = 3    # left  stick vertical   (up = negative)
+_AXIS_RX = 0    # right stick horizontal
 
 # DualSense button indices (SDL2 / pygame)
 _BTN_CROSS    = 0
