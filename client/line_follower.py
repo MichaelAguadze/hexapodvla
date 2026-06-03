@@ -89,6 +89,10 @@ def _find_centroid(mask: np.ndarray) -> Optional[Tuple[int, int]]:
 class LineFollower:
     """Drives the hexapod along a coloured floor line.
 
+    When a controller is supplied, moving any stick overrides the
+    line follower so the operator can steer manually.  Releasing the
+    sticks hands control back to the algorithm automatically.
+
     Args:
         client:         Connected RobotClient instance.
         colour:         Line colour — "red", "white", or "blue".
@@ -98,11 +102,12 @@ class LineFollower:
         kd:             Derivative  gain for the steering PD controller.
         turn_reduction: How much to slow forward speed on sharp turns (0-1).
         roi_top:        Top of the region-of-interest as a fraction of frame
-                        height (0 = top, 1 = bottom).  Keeping this in the
-                        lower half helps the robot react early.
+                        height (0 = top, 1 = bottom).
         lost_timeout:   Seconds without a detected line before stopping.
         loop_hz:        Target control-loop frequency.
         show_preview:   Display a debug window (requires a local display).
+        controller:     Optional PS5Controller for manual override.
+        manual_threshold: Minimum stick magnitude to trigger manual override.
     """
 
     def __init__(
@@ -118,6 +123,8 @@ class LineFollower:
         lost_timeout: float = 2.0,
         loop_hz: float = 10.0,
         show_preview: bool = False,
+        controller=None,
+        manual_threshold: float = 5.0,
     ):
         if colour not in _COLOUR_RANGES:
             raise ValueError(
@@ -135,6 +142,9 @@ class LineFollower:
         self.lost_timeout  = lost_timeout
         self._period       = 1.0 / max(loop_hz, 1.0)
         self.show_preview  = show_preview
+
+        self.controller       = controller
+        self.manual_threshold = manual_threshold
 
         self._prev_error   = 0.0
         self._last_seen    = time.monotonic()
@@ -156,6 +166,10 @@ class LineFollower:
 
         try:
             while self._running:
+                # Options button on PS5 exits
+                if self.controller and self.controller.events.get("stop_session"):
+                    print("\n[LineFollower] PS5 Options pressed — stopping.")
+                    break
                 t0 = time.monotonic()
                 self._step()
                 elapsed = time.monotonic() - t0
@@ -179,6 +193,22 @@ class LineFollower:
     # ------------------------------------------------------------------
 
     def _step(self) -> None:
+        # --- PS5 manual override ---
+        if self.controller is not None:
+            vx, vy, omega = self.controller.get_action()
+            if abs(vx) > self.manual_threshold or \
+               abs(vy) > self.manual_threshold or \
+               abs(omega) > self.manual_threshold:
+                try:
+                    self.client.send_velocity(vx=vx, vy=vy, omega=omega)
+                except Exception:
+                    pass
+                self._prev_error = 0.0
+                self._last_seen = time.monotonic()
+                print("\r[LineFollower] MANUAL  vx={:4.1f} vy={:4.1f} ω={:+5.1f}   ".format(
+                    vx, vy, omega), end="", flush=True)
+                return
+
         try:
             frame_bgr, _, _ = self.client.get_frame()
         except Exception as exc:

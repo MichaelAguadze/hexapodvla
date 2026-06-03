@@ -30,6 +30,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--loop-hz", type=float, default=10.0)
     parser.add_argument("--preview", action="store_true",
                         help="Show OpenCV debug window (requires local display)")
+    parser.add_argument("--controller", choices=["ps5"], default=None,
+                        help="Enable PS5 manual override (sticks override the line follower)")
+    parser.add_argument("--joystick-index", type=int, default=0,
+                        help="Pygame joystick index (for --controller ps5)")
     return parser
 
 
@@ -41,10 +45,11 @@ def main() -> None:
     print("=" * 50)
     print("  hexapod Line Follower")
     print("=" * 50)
-    print("  Robot:   {}".format(robot_url))
-    print("  Colour:  {}".format(args.colour))
-    print("  Speed:   {}".format(args.speed))
-    print("  Kp/Kd:   {} / {}".format(args.kp, args.kd))
+    print("  Robot:      {}".format(robot_url))
+    print("  Colour:     {}".format(args.colour))
+    print("  Speed:      {}".format(args.speed))
+    print("  Kp/Kd:      {} / {}".format(args.kp, args.kd))
+    print("  Controller: {}".format(args.controller or "none"))
     print()
 
     client = RobotClient(robot_url=robot_url, timeout=1.0, max_retries=2)
@@ -55,7 +60,19 @@ def main() -> None:
         print("  Make sure the robot server is running.")
         return
 
-    print("  Connected. Starting line follower — Ctrl+C to stop.")
+    controller = None
+    if args.controller == "ps5":
+        from .ps5_controller import PS5Controller
+        controller = PS5Controller(
+            speed=args.max_duty,
+            max_speed=args.max_duty,
+            joystick_index=args.joystick_index,
+        )
+        controller.start()
+        print("  PS5 controller connected — move sticks to override line follower.")
+        print("  Press Options to stop.")
+    else:
+        print("  Connected. Starting line follower — Ctrl+C to stop.")
     print()
 
     follower = LineFollower(
@@ -69,8 +86,14 @@ def main() -> None:
         lost_timeout=args.lost_timeout,
         loop_hz=args.loop_hz,
         show_preview=args.preview,
+        controller=controller,
     )
-    follower.run()
+
+    try:
+        follower.run()
+    finally:
+        if controller:
+            controller.stop()
 
 
 if __name__ == "__main__":
