@@ -131,7 +131,7 @@ class MotorController:
         try:
             result = subprocess.run(
                 ["rosnode", "kill", "/Hexapod_Teleop_Joystick"],
-                capture_output=True, timeout=3,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=3,
             )
             if result.returncode == 0:
                 rospy.loginfo("Killed /Hexapod_Teleop_Joystick")
