@@ -19,10 +19,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--speed",  type=float, default=30.0,
                         help="Forward speed duty when centred (default 30)")
     parser.add_argument("--max-duty", type=float, default=80.0)
-    parser.add_argument("--kp",     type=float, default=60.0,
-                        help="Proportional steering gain")
-    parser.add_argument("--kd",     type=float, default=8.0,
-                        help="Derivative steering gain")
+    parser.add_argument("--kp",         type=float, default=40.0,
+                        help="Lateral (position) gain — corrects drift off line centre")
+    parser.add_argument("--kp-heading", type=float, default=30.0,
+                        help="Heading (angle) gain — aligns robot with line direction")
+    parser.add_argument("--kd",         type=float, default=8.0,
+                        help="Derivative damping on lateral error")
     parser.add_argument("--roi-top", type=float, default=0.4,
                         help="Top of look-ahead ROI as fraction of frame height (0-1)")
     parser.add_argument("--lost-timeout", type=float, default=2.0,
@@ -83,6 +85,7 @@ def main() -> None:
         base_speed=args.speed,
         max_duty=args.max_duty,
         kp=args.kp,
+        kp_heading=args.kp_heading,
         kd=args.kd,
         roi_top=args.roi_top,
         lost_timeout=args.lost_timeout,

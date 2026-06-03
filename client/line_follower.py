@@ -65,8 +65,23 @@ def _build_mask(hsv: np.ndarray, colour: str) -> np.ndarray:
     return mask
 
 
-def _find_centroid(mask: np.ndarray) -> Optional[Tuple[int, int]]:
-    """Return (cx, cy) of the largest contour, or None if nothing found."""
+def _find_line_direction(
+    mask: np.ndarray, frame_cx: float
+) -> Optional[Tuple[float, float, int, int]]:
+    """Fit a line to the largest colour blob and return orientation info.
+
+    Returns:
+        (lateral_error, heading_norm, cx, cy)  or  None if no line found.
+
+        lateral_error  — normalised [-1, 1]: positive = line is right of centre.
+                         Robot must steer right to re-centre.
+        heading_norm   — normalised [-1, 1]: positive = line tilts right in frame
+                         (robot is turned left relative to line direction).
+                         Robot must turn right to align.
+        cx, cy         — centroid of the detected blob in the mask image.
+    """
+    import math
+
     contours, _ = cv2.findContours(
         mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
     )
@@ -74,16 +89,35 @@ def _find_centroid(mask: np.ndarray) -> Optional[Tuple[int, int]]:
         return None
 
     largest = max(contours, key=cv2.contourArea)
-    if cv2.contourArea(largest) < 500:   # ignore tiny blobs
+    if cv2.contourArea(largest) < 500:
         return None
 
+    # Centroid gives lateral position
     M = cv2.moments(largest)
     if M["m00"] == 0:
         return None
-
     cx = int(M["m10"] / M["m00"])
     cy = int(M["m01"] / M["m00"])
-    return cx, cy
+
+    # fitLine gives the direction vector of the line's long axis
+    line = cv2.fitLine(largest, cv2.DIST_L2, 0, 0.01, 0.01)
+    vx, vy = float(line[0]), float(line[1])
+
+    # Make sure the direction vector always points "downward" in the image
+    # (toward the robot) so the angle sign is consistent
+    if vy < 0:
+        vx, vy = -vx, -vy
+
+    # Heading angle from vertical (robot's forward axis in the image)
+    # 0° = line runs straight ahead (robot aligned)
+    # Positive = line tilts right = robot is turned left relative to line
+    heading_deg = math.degrees(math.atan2(vx, vy))
+    heading_norm = heading_deg / 90.0          # normalise to [-1, 1]
+    heading_norm = max(-1.0, min(1.0, heading_norm))
+
+    lateral_error = (cx - frame_cx) / frame_cx  # normalised [-1, 1]
+
+    return lateral_error, heading_norm, cx, cy
 
 
 class LineFollower:
@@ -123,6 +157,7 @@ class LineFollower:
         lost_timeout: float = 2.0,
         loop_hz: float = 10.0,
         show_preview: bool = False,
+        kp_heading: float = 30.0,
         controller=None,
         manual_threshold: float = 5.0,
         memory_duration: float = 0.6,
@@ -136,7 +171,8 @@ class LineFollower:
         self.colour        = colour
         self.base_speed    = base_speed
         self.max_duty      = max_duty
-        self.kp            = kp
+        self.kp            = kp          # lateral (position) gain
+        self.kp_heading    = kp_heading  # heading (angle) gain
         self.kd            = kd
         self.turn_reduction = turn_reduction
         self.roi_top       = roi_top
@@ -228,21 +264,19 @@ class LineFollower:
 
         hsv  = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         mask = _build_mask(hsv, self.colour)
-        centroid = _find_centroid(mask)
+        result = _find_line_direction(mask, frame_cx)
 
         now = time.monotonic()
 
-        if centroid is None:
+        if result is None:
             lost_for = now - self._last_seen
             if lost_for > self.lost_timeout:
-                # Line gone too long — full stop
                 self._stop_robot()
                 self._last_vx = 0.0
                 self._last_omega = 0.0
                 print("\r[LineFollower] Line lost — stopped.         ", end="", flush=True)
             elif lost_for < self.memory_duration and \
                     (abs(self._last_vx) > 0 or abs(self._last_omega) > 0):
-                # Short gap — carry last known command to complete the turn
                 try:
                     self.client.send_velocity(vx=self._last_vx, vy=0.0,
                                               omega=self._last_omega)
@@ -259,19 +293,24 @@ class LineFollower:
             return
 
         self._last_seen = now
-        cx, cy = centroid
+        lateral_error, heading_norm, cx, cy = result
 
-        # Normalised lateral error: negative = line to the left, positive = right
-        error    = (cx - frame_cx) / frame_cx
-        d_error  = error - self._prev_error
-        self._prev_error = error
+        # Derivative on lateral error for damping
+        d_lateral = lateral_error - self._prev_error
+        self._prev_error = lateral_error
 
-        # Steering: positive omega = turn left
-        omega = -(self.kp * error + self.kd * d_error)
+        # Steering combines:
+        #   lateral correction — move robot back to centre of the line
+        #   heading correction — align robot's direction with the line's angle
+        # Both push omega in the same direction when the robot drifts off-line.
+        omega = -(self.kp * lateral_error
+                  + self.kd * d_lateral
+                  + self.kp_heading * heading_norm)
         omega = float(np.clip(omega, -self.max_duty, self.max_duty))
 
-        # Slow down proportionally when turning hard
-        vx = self.base_speed * (1.0 - self.turn_reduction * abs(error))
+        # Slow down when misaligned
+        misalignment = abs(lateral_error) + abs(heading_norm)
+        vx = self.base_speed * (1.0 - self.turn_reduction * min(misalignment, 1.0))
         vx = float(np.clip(vx, 0.0, self.max_duty))
 
         try:
@@ -283,14 +322,15 @@ class LineFollower:
             return
 
         print(
-            "\r[LineFollower] err={:+.2f}  vx={:4.1f}  ω={:+5.1f}   ".format(
-                error, vx, omega
+            "\r[LineFollower] lat={:+.2f}  hdg={:+.2f}  vx={:4.1f}  ω={:+5.1f}   ".format(
+                lateral_error, heading_norm, vx, omega
             ),
             end="", flush=True,
         )
 
         if self.show_preview:
-            self._draw_preview(frame_bgr, roi_y, mask, (cx, cy + roi_y), error, vx, omega)
+            self._draw_preview(frame_bgr, roi_y, mask, (cx, cy + roi_y),
+                               lateral_error, vx, omega)
 
     def _stop_robot(self) -> None:
         try:
