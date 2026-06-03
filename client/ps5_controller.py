@@ -13,9 +13,14 @@ Button / stick mapping (DualSense via USB or Bluetooth, SDL2/pygame):
     Square         → discard_episode event
     Options        → stop_session event
     Touchpad click → enter_pressed event
+
+macOS note
+----------
+SDL2 (used by pygame) requires that all event polling happens on the
+main thread on macOS.  This class intentionally has NO background thread
+— call get_action() from your main loop and it will pump events inline.
 """
 
-import threading
 import time
 
 import numpy as np
@@ -50,9 +55,10 @@ _DEADZONE = 0.08
 
 
 class PS5Controller:
-    """Non-blocking PS5 DualSense gamepad controller.
+    """PS5 DualSense gamepad controller — drop-in for TeleopController.
 
-    Same public interface as TeleopController — drop-in replacement.
+    All event polling runs on the caller's thread (required by macOS/SDL2).
+    Call get_action() from your main loop; it pumps pygame events internally.
     """
 
     def __init__(
@@ -67,12 +73,12 @@ class PS5Controller:
         axis_ly: int = _AXIS_LY,
         axis_rx: int = _AXIS_RX,
     ):
-        self.speed      = speed
-        self.max_speed  = max_speed
-        self.min_speed  = min_speed
-        self.speed_step = speed_step
+        self.speed          = speed
+        self.max_speed      = max_speed
+        self.min_speed      = min_speed
+        self.speed_step     = speed_step
         self.joystick_index = joystick_index
-        self.deadzone   = deadzone
+        self.deadzone       = deadzone
 
         self._axis_lx = axis_lx
         self._axis_ly = axis_ly
@@ -80,7 +86,6 @@ class PS5Controller:
 
         self._joystick = None
         self._running  = False
-        self._thread   = None
 
         self.events = {
             "accept_episode":  False,   # Triangle
@@ -94,7 +99,10 @@ class PS5Controller:
     # ------------------------------------------------------------------
 
     def start(self) -> None:
-        """Connect to the PS5 controller and start the event pump."""
+        """Initialise pygame and connect to the controller.
+
+        Must be called from the main thread on macOS.
+        """
         pygame.init()
         pygame.joystick.init()
 
@@ -106,21 +114,16 @@ class PS5Controller:
 
         self._joystick = pygame.joystick.Joystick(self.joystick_index)
         self._joystick.init()
+        self._running = True
         print("[PS5] Connected: {}  ({} axes, {} buttons)".format(
             self._joystick.get_name(),
             self._joystick.get_numaxes(),
             self._joystick.get_numbuttons(),
         ))
 
-        self._running = True
-        self._thread = threading.Thread(target=self._event_loop, daemon=True)
-        self._thread.start()
-
     def stop(self) -> None:
-        """Stop event pump and release pygame resources."""
+        """Release pygame resources."""
         self._running = False
-        if self._thread:
-            self._thread.join(timeout=2.0)
         try:
             pygame.joystick.quit()
             pygame.quit()
@@ -128,17 +131,16 @@ class PS5Controller:
             pass
 
     # ------------------------------------------------------------------
-    # Event pump
+    # Event pump  (must run on main thread)
     # ------------------------------------------------------------------
 
-    def _event_loop(self) -> None:
-        while self._running:
-            for event in pygame.event.get():
-                if event.type == pygame.JOYBUTTONDOWN:
-                    self._on_button_down(event.button)
-                elif event.type == pygame.JOYDEVICEREMOVED:
-                    print("[PS5] Controller disconnected!")
-            time.sleep(0.01)
+    def _pump(self) -> None:
+        """Process all pending pygame events — call from the main thread."""
+        for event in pygame.event.get():
+            if event.type == pygame.JOYBUTTONDOWN:
+                self._on_button_down(event.button)
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                print("[PS5] Controller disconnected!")
 
     def _on_button_down(self, button: int) -> None:
         if button == _BTN_TRIANGLE:
@@ -176,13 +178,13 @@ class PS5Controller:
     # ------------------------------------------------------------------
 
     def get_action(self):
-        """Return (vx, vy, omega) duty values.
+        """Pump events then return (vx, vy, omega) duty values.
 
+        Must be called from the main thread.
         Cross (X) held = emergency stop.
-        Left stick Y   = forward/backward (vx).
-        Left stick X   = strafe (vy).
-        Right stick X  = rotation (omega).
         """
+        self._pump()
+
         if self._joystick is None:
             return 0.0, 0.0, 0.0
 
@@ -193,9 +195,9 @@ class PS5Controller:
         ly = self._axis(self._axis_ly)
         rx = self._axis(self._axis_rx)
 
-        vx    = -ly * self.speed   # stick up  (−Y) → forward
-        vy    = -lx * self.speed   # stick left(−X) → strafe left
-        omega = -rx * self.speed   # right stick left(−X) → rotate left
+        vx    = -ly * self.speed   # stick up   (−Y) → forward
+        vy    = -lx * self.speed   # stick left (−X) → strafe left
+        omega = -rx * self.speed   # right stick left (−X) → rotate left
 
         return vx, vy, omega
 
@@ -213,9 +215,13 @@ class PS5Controller:
             self.events[k] = False
 
     def wait_for_enter(self) -> None:
-        """Block until touchpad is clicked (or stop_session fires)."""
+        """Block until touchpad is clicked (or stop_session fires).
+
+        Pumps events on each iteration — must be called from the main thread.
+        """
         self.events["enter_pressed"] = False
         while not self.events["enter_pressed"] and not self.events["stop_session"]:
+            self._pump()
             time.sleep(0.05)
         self.events["enter_pressed"] = False
 
