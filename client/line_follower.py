@@ -125,6 +125,7 @@ class LineFollower:
         show_preview: bool = False,
         controller=None,
         manual_threshold: float = 5.0,
+        memory_duration: float = 0.6,
     ):
         if colour not in _COLOUR_RANGES:
             raise ValueError(
@@ -145,10 +146,13 @@ class LineFollower:
 
         self.controller       = controller
         self.manual_threshold = manual_threshold
+        self.memory_duration  = memory_duration
 
         self._prev_error   = 0.0
         self._last_seen    = time.monotonic()
         self._running      = False
+        self._last_vx      = 0.0
+        self._last_omega   = 0.0
 
     # ------------------------------------------------------------------
     # Public interface
@@ -229,10 +233,23 @@ class LineFollower:
         now = time.monotonic()
 
         if centroid is None:
-            # Line lost
-            if now - self._last_seen > self.lost_timeout:
+            lost_for = now - self._last_seen
+            if lost_for > self.lost_timeout:
+                # Line gone too long — full stop
                 self._stop_robot()
+                self._last_vx = 0.0
+                self._last_omega = 0.0
                 print("\r[LineFollower] Line lost — stopped.         ", end="", flush=True)
+            elif lost_for < self.memory_duration and \
+                    (abs(self._last_vx) > 0 or abs(self._last_omega) > 0):
+                # Short gap — carry last known command to complete the turn
+                try:
+                    self.client.send_velocity(vx=self._last_vx, vy=0.0,
+                                              omega=self._last_omega)
+                except Exception:
+                    pass
+                print("\r[LineFollower] Coasting  vx={:.1f} ω={:+.1f}          ".format(
+                    self._last_vx, self._last_omega), end="", flush=True)
             else:
                 print("\r[LineFollower] Searching...                 ", end="", flush=True)
             self._prev_error = 0.0
@@ -259,6 +276,8 @@ class LineFollower:
 
         try:
             self.client.send_velocity(vx=vx, vy=0.0, omega=omega)
+            self._last_vx = vx
+            self._last_omega = omega
         except Exception as exc:
             print("[LineFollower] Send error: {}".format(exc))
             return

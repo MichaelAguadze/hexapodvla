@@ -27,6 +27,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Top of look-ahead ROI as fraction of frame height (0-1)")
     parser.add_argument("--lost-timeout", type=float, default=2.0,
                         help="Seconds without line before stopping")
+    parser.add_argument("--memory-duration", type=float, default=0.6,
+                        help="Seconds to coast on last command when line briefly disappears (default 0.6)")
     parser.add_argument("--loop-hz", type=float, default=10.0)
     parser.add_argument("--preview", action="store_true",
                         help="Show OpenCV debug window (requires local display)")
@@ -85,6 +87,7 @@ def main() -> None:
         roi_top=args.roi_top,
         lost_timeout=args.lost_timeout,
         loop_hz=args.loop_hz,
+        memory_duration=args.memory_duration,
         show_preview=args.preview,
         controller=controller,
     )
