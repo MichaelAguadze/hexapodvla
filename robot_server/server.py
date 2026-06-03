@@ -170,9 +170,10 @@ class ROSCameraCapture:
     this on startup).
     """
 
-    def __init__(self, topic="/camera/color/image_raw", jpeg_quality=70):
+    def __init__(self, topic="/camera/color/image_raw", jpeg_quality=70, flip=False):
         self.topic = topic
         self.jpeg_quality = jpeg_quality
+        self.flip = flip
 
         self._frame = None       # type: Optional[bytes]
         self._raw_frame = None
@@ -231,6 +232,8 @@ class ROSCameraCapture:
         frame_bgr = self._decode_ros_image(msg)
         if frame_bgr is None:
             return
+        if self.flip:
+            frame_bgr = cv2.rotate(frame_bgr, cv2.ROTATE_180)
         ok, jpeg = cv2.imencode(
             ".jpg", frame_bgr,
             [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality],
@@ -465,7 +468,7 @@ def main():
                            flip=args.flip_camera)
     if not camera.start():
         print("[Camera] Trying ROS topic /camera/color/image_raw...")
-        camera = ROSCameraCapture(jpeg_quality=args.jpeg_quality)
+        camera = ROSCameraCapture(jpeg_quality=args.jpeg_quality, flip=args.flip_camera)
         if not camera.start():
             print("[WARNING] Camera unavailable. /stream and /snapshot will return 503.")
 
