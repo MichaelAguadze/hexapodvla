@@ -100,7 +100,7 @@ def _find_line_direction(
     cy = int(M["m01"] / M["m00"])
 
     # fitLine gives the direction vector of the line's long axis
-    line = cv2.fitLine(largest, cv2.DIST_L2, 0, 0.01, 0.01)
+    line = cv2.fitLine(largest, cv2.DIST_L2, 0, 0.01, 0.01).flatten()
     vx, vy = float(line[0]), float(line[1])
 
     # Make sure the direction vector always points "downward" in the image
