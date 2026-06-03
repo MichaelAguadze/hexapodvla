@@ -160,6 +160,107 @@ class CameraCapture:
             return (time.monotonic() - self._timestamp) < 2.0
 
 
+# --- ROS Camera Capture (Orbbec via ros_astra_camera) ---
+
+class ROSCameraCapture:
+    """Camera capture by subscribing to /camera/color/image_raw ROS topic.
+
+    Used as a fallback when V4L2 and OpenNI2 both fail (e.g. Jetson + Orbbec).
+    Requires that a ROS node has already been initialised (MotorController does
+    this on startup).
+    """
+
+    def __init__(self, topic="/camera/color/image_raw", jpeg_quality=70):
+        self.topic = topic
+        self.jpeg_quality = jpeg_quality
+
+        self._frame = None       # type: Optional[bytes]
+        self._raw_frame = None
+        self._timestamp = 0.0
+        self._frame_index = 0
+        self._lock = threading.Lock()
+        self._running = False
+        self._sub = None
+
+    def start(self) -> bool:
+        try:
+            import rospy
+            from sensor_msgs.msg import Image as RosImage
+        except ImportError:
+            print("[Camera] rospy not available — cannot use ROS topic.")
+            return False
+
+        try:
+            self._sub = rospy.Subscriber(
+                self.topic, RosImage, self._image_cb, queue_size=1,
+            )
+            self._running = True
+            print("[Camera] Subscribed to ROS topic: {}".format(self.topic))
+            return True
+        except Exception as exc:
+            print("[Camera] ROS subscription failed: {}".format(exc))
+            return False
+
+    def stop(self) -> None:
+        self._running = False
+        if self._sub:
+            self._sub.unregister()
+
+    def _decode_ros_image(self, msg) -> Optional[object]:
+        """Convert sensor_msgs/Image to a BGR numpy array."""
+        import numpy as np
+        # Try cv_bridge first
+        try:
+            from cv_bridge import CvBridge
+            return CvBridge().imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        except Exception:
+            pass
+        # Manual fallback
+        try:
+            data = np.frombuffer(msg.data, dtype=np.uint8)
+            img = data.reshape((msg.height, msg.width, -1))
+            if msg.encoding in ("rgb8", "RGB8"):
+                return img[:, :, ::-1].copy()
+            return img
+        except Exception:
+            return None
+
+    def _image_cb(self, msg) -> None:
+        if not self._running:
+            return
+        frame_bgr = self._decode_ros_image(msg)
+        if frame_bgr is None:
+            return
+        ok, jpeg = cv2.imencode(
+            ".jpg", frame_bgr,
+            [cv2.IMWRITE_JPEG_QUALITY, self.jpeg_quality],
+        )
+        if not ok:
+            return
+        with self._lock:
+            self._frame = jpeg.tobytes()
+            self._raw_frame = frame_bgr
+            self._timestamp = time.monotonic()
+            self._frame_index += 1
+
+    def get_jpeg(self) -> Tuple[Optional[bytes], float, int]:
+        with self._lock:
+            return self._frame, self._timestamp, self._frame_index
+
+    def get_raw(self):
+        with self._lock:
+            return self._raw_frame
+
+    @property
+    def is_alive(self) -> bool:
+        if not self._running:
+            return False
+        with self._lock:
+            if self._timestamp == 0:
+                return False
+            return (time.monotonic() - self._timestamp) < 2.0
+
+
 # --- Motor Watchdog ---
 
 class MotorWatchdog:
@@ -358,16 +459,25 @@ def main():
     print("[Init] Motor controller...")
     mc = MotorController(max_duty=args.max_duty)
 
-    # Initialize camera (non-fatal — motor control works without it)
+    # Initialize camera — try V4L2, then OpenNI2, then ROS topic
     print("[Init] Camera...")
     camera = CameraCapture(device=args.camera, jpeg_quality=args.jpeg_quality,
                            flip=args.flip_camera)
     if not camera.start():
-        print("[WARNING] Camera failed to open. /stream and /snapshot will return 503.")
+        print("[Camera] Trying ROS topic /camera/color/image_raw...")
+        camera = ROSCameraCapture(jpeg_quality=args.jpeg_quality)
+        if not camera.start():
+            print("[WARNING] Camera unavailable. /stream and /snapshot will return 503.")
 
-    # Wait for first frame if camera started
-    if camera.is_alive:
-        time.sleep(0.5)
+    # Wait up to 2s for first frame
+    if camera._running:
+        deadline = time.monotonic() + 2.0
+        while not camera.is_alive and time.monotonic() < deadline:
+            time.sleep(0.1)
+        if camera.is_alive:
+            print("[Camera] First frame received.")
+        else:
+            print("[WARNING] Camera started but no frames yet.")
 
     # Initialize health monitor
     print("[Init] Health monitor...")
@@ -384,9 +494,11 @@ def main():
 
     # Graceful shutdown
     def shutdown(*_):
-        print("\n[Shutdown] Stopping motors...")
+        print("\n[Shutdown] Sitting robot down...")
+        mc.sit()
+        time.sleep(3.5)  # Wait for sit animation to complete
+        print("[Shutdown] Stopping motors...")
         mc.stop()
-        mc.set_rgb([[1, 0, 0, 0], [2, 0, 0, 0]])  # LEDs off
         print("[Shutdown] Stopping camera...")
         camera.stop()
         print("[Shutdown] Stopping watchdog...")

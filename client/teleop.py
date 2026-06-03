@@ -26,7 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
                         default="keyboard",
                         help="Input device: keyboard (default) or ps5")
     parser.add_argument("--joystick-index", type=int, default=0,
-                        help="Pygame joystick index (default 0, for --controller ps5)")
+                        help="Pygame joystick index (for --controller ps5)")
     return parser
 
 
@@ -92,7 +92,7 @@ def main() -> None:
     print("  hexapod Teleop")
     print("=" * 50)
     print(f"  Robot:      {robot_url}")
-    print(f"  Controller: {args.controller}")
+    print(f"  Controller: {args.controller.upper()}")
     print()
 
     print("  Checking robot connection...")
@@ -111,16 +111,17 @@ def main() -> None:
         f"Camera: {'OK' if health.get('camera_ok') else 'FAIL'}"
     )
     print()
+
     if args.controller == "ps5":
-        print("  Controls (PS5):")
-        print("    Left  stick  = forward / strafe")
-        print("    Right stick  = rotate")
-        print("    Cross (X)    = emergency stop (hold)")
-        print("    R1 / L1      = speed up / down")
-        print("    Triangle     = accept episode")
-        print("    Square       = discard episode")
-        print("    Options      = exit teleop")
-        print("    Touchpad     = confirm / enter")
+        print("  Controls (PS5 DualSense):")
+        print("    Left  stick       = forward / strafe")
+        print("    Right stick X     = rotate")
+        print("    Cross (X) held    = emergency stop")
+        print("    R1 / L1           = speed up / down")
+        print("    Triangle          = accept episode")
+        print("    Square            = discard episode")
+        print("    Options           = exit teleop")
+        print("    Touchpad click    = confirm / enter")
     else:
         print("  Controls (keyboard):")
         print("    WASD  = translate")
