@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HexapodVLA — Hexapod Robot Learning Platform</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --accent:    #58a6ff;
+      --accent2:   #3fb950;
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --card-bg:   #1c2128;
+      --radius:    10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 2rem;
+    }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: var(--text); }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a { color: var(--muted); font-size: 0.9rem; }
+    .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      background: radial-gradient(ellipse at 50% 0%, #1f2d4a 0%, var(--bg) 65%);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(88, 166, 255, 0.15);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 620px;
+      margin: 0 auto 2.5rem;
+    }
+    .btn-row { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.65rem 1.4rem;
+      border-radius: var(--radius);
+      font-weight: 600; font-size: 0.95rem;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; text-decoration: none; }
+    .btn-primary { background: var(--accent); color: #0d1117; }
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    /* ── SECTION WRAPPER ── */
+    section { padding: 4rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 0.78rem; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700; margin-bottom: 1rem;
+    }
+    .lead { color: var(--muted); max-width: 640px; margin-bottom: 2.5rem; }
+
+    /* ── FEATURE GRID ── */
+    .grid { display: grid; gap: 1.25rem; }
+    .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .card-icon { font-size: 1.8rem; margin-bottom: 0.75rem; }
+    .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .card p { color: var(--muted); font-size: 0.9rem; }
+
+    /* ── ARCHITECTURE ── */
+    .arch {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+    }
+    .arch-diagram {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.8;
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .arch-diagram .hl { color: var(--accent); }
+    .arch-diagram .hl2 { color: var(--accent2); }
+
+    /* ── CODE BLOCK ── */
+    .code-block {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+    }
+    .code-block .prompt { color: var(--accent2); user-select: none; }
+    .code-block .comment { color: var(--muted); }
+    .code-block div { margin-bottom: 0.2rem; }
+
+    /* ── STEPS ── */
+    .steps { display: flex; flex-direction: column; gap: 1rem; }
+    .step {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .step-num {
+      flex-shrink: 0;
+      width: 2rem; height: 2rem;
+      background: rgba(88, 166, 255, 0.15);
+      border: 1px solid rgba(88, 166, 255, 0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; color: var(--accent);
+    }
+    .step-body h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .step-body p { color: var(--muted); font-size: 0.88rem; }
+    .step-body code {
+      background: #010409; border: 1px solid var(--border);
+      border-radius: 4px; padding: 0.1rem 0.4rem;
+      font-size: 0.82rem; color: var(--accent2);
+    }
+
+    /* ── DIVIDER ── */
+    .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center;
+      padding: 2.5rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--muted); }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">⬡ HexapodVLA</span>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#architecture">Architecture</a>
+    <a href="#quickstart">Quick Start</a>
+    <a href="getting-started.html">Docs</a>
+    <a href="https://github.com/MichaelAguadze/hexapodvla" target="_blank">GitHub</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="badge">NCAT Research · Spring 2026</div>
+  <h1>Hexapod <span>VLA</span> Platform</h1>
+  <p>
+    An end-to-end robot learning platform for the XiaoRGEEK hexapod —
+    autonomous line following, PS5 teleop, data collection, and CNN / VLA policy training,
+    all over a lightweight HTTP API.
+  </p>
+  <div class="btn-row">
+    <a class="btn btn-primary" href="https://github.com/MichaelAguadze/hexapodvla" target="_blank">
+      View on GitHub
+    </a>
+    <a class="btn btn-secondary" href="getting-started.html">
+      Getting Started →
+    </a>
+  </div>
+</div>
+
+<hr class="divider" />
+
+<!-- FEATURES -->
+<section id="features">
+  <p class="section-label">What it does</p>
+  <h2>Everything you need to build a walking robot brain</h2>
+  <p class="lead">
+    From raw data collection to trained policies — the full pipeline runs on a laptop
+    talking to a Jetson-based hexapod over Wi-Fi.
+  </p>
+  <div class="grid grid-3">
+    <div class="card">
+      <div class="card-icon">🎮</div>
+      <h3>PS5 Teleop</h3>
+      <p>Drive the hexapod with a DualSense controller via Bluetooth. Left stick moves, right stick rotates, cross button emergency-stops.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">〰️</div>
+      <h3>Colour Line Following</h3>
+      <p>Vision-based line follower for red, white, and blue floor lines. Uses <code>cv2.fitLine</code> to align the robot's heading with the line direction — not just the centroid.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🕹️</div>
+      <h3>PS5 Manual Override</h3>
+      <p>While line-following, move any stick to take manual control instantly. Release and the robot resumes autonomous following.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📹</div>
+      <h3>Episode Recording</h3>
+      <p>Record labelled teleop episodes at 10 Hz. Accept or discard each episode with arrow keys or the PS5 controller before saving.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧠</div>
+      <h3>CNN Policy</h3>
+      <p>Train an image-based CNN policy from collected episodes. Evaluate checkpoints locally and deploy to the robot in real time.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤗</div>
+      <h3>LeRobot Export</h3>
+      <p>Export any recorded session to Hugging Face's LeRobot dataset format for use with large Vision-Language-Action models.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <h3>ROS 1 Integration</h3>
+      <p>Motor controller publishes to <code>/cmd_vel</code>, <code>/state</code>, and <code>/head_scalar</code> — compatible with the hexapod's C++ controller node.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📷</div>
+      <h3>Orbbec RGB+Depth</h3>
+      <p>Serves the Orbbec Astra's colour stream via a ROS topic fallback when V4L2 is unavailable. Depth data exposed for future obstacle avoidance.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">🛡️</div>
+      <h3>Safety Features</h3>
+      <p>Motor watchdog stops the robot if commands time out. Auto sit-down on server shutdown. Stand-up sequence runs automatically at startup.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- ARCHITECTURE -->
+<section id="architecture">
+  <p class="section-label">How it works</p>
+  <h2>System Architecture</h2>
+  <p class="lead">
+    The laptop talks to a Flask HTTP server on the robot. The server bridges HTTP commands
+    to ROS 1 topics consumed by the hexapod's C++ controller.
+  </p>
+  <div class="arch">
+    <div class="arch-diagram">
+<span class="hl">┌─────────────────────────────────────────────────────────────────┐</span>
+<span class="hl">│                         LAPTOP (macOS / Linux)                   │</span>
+<span class="hl">│                                                                   │</span>
+│  PS5 DualSense ──► <span class="hl2">PS5Controller</span>  ──┐                             │
+│  Keyboard      ──► <span class="hl2">TeleopController</span> ──┤                             │
+│                                    ├──► <span class="hl2">RobotClient (HTTP)</span>          │
+│                    <span class="hl2">LineFollower</span>    ──┤    POST /velocity            │
+│                    <span class="hl2">CNNPolicy</span>       ──┘    GET  /snapshot             │
+│                                                                   │
+<span class="hl">└───────────────────────────────┬─────────────────────────────────┘</span>
+                                │  Wi-Fi  (HTTP :8080)
+<span class="hl">┌───────────────────────────────▼─────────────────────────────────┐</span>
+<span class="hl">│                    ROBOT (Jetson TX1 · ROS Melodic)              │</span>
+<span class="hl">│                                                                   │</span>
+│  Flask HTTP Server                                                │
+│  ├── /velocity  ──► <span class="hl2">MotorController</span>                              │
+│  │                    ├── pub /cmd_vel  (geometry_msgs/Twist)    │
+│  │                    ├── pub /state    (std_msgs/Bool)           │
+│  │                    └── pub /head_scalar                        │
+│  │                                                                │
+│  └── /snapshot  ◄── <span class="hl2">ROSCameraCapture</span>                             │
+│                       └── sub /camera/color/image_raw             │
+│                                                                   │
+│  <span class="hl2">Hexapod_Controller</span> (C++)  ◄── /cmd_vel, /state                  │
+│  ros_astra_camera              ──► /camera/color/image_raw        │
+<span class="hl">└─────────────────────────────────────────────────────────────────┘</span></div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- QUICKSTART -->
+<section id="quickstart">
+  <p class="section-label">Get up and running</p>
+  <h2>Quick Start</h2>
+  <p class="lead">Five steps from clone to driving the robot.</p>
+
+  <div class="grid grid-2" style="margin-bottom:2rem">
+    <div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Clone and create the venv</h4>
+            <p>Requires Python 3.10+ on the laptop.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Install laptop dependencies</h4>
+            <p><code>pip install -r requirements-laptop.txt</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Deploy server to the robot</h4>
+            <p><code>ROBOT_IP=x.x.x.x bash scripts/deploy_server.sh start</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Drive with keyboard or PS5</h4>
+            <p><code>python -m client.teleop --robot-ip x.x.x.x --controller ps5</code></p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h4>Start line following</h4>
+            <p><code>python -m client.line_follow --colour red --controller ps5</code></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="code-block">
+      <div><span class="comment"># 1. Clone</span></div>
+      <div><span class="prompt">$ </span>git clone https://github.com/MichaelAguadze/hexapodvla</div>
+      <div><span class="prompt">$ </span>cd hexapodvla</div>
+      <div>&nbsp;</div>
+      <div><span class="comment"># 2. Install (laptop)</span></div>
+      <div><span class="prompt">$ </span>python3 -m venv venv &amp;&amp; source venv/bin/activate</div>
+      <div><span class="prompt">$ </span>pip install -r requirements-laptop.txt</div>
+      <div>&nbsp;</div>
+      <div><span class="comment"># 3. Deploy server to robot</span></div>
+      <div><span class="prompt">$ </span>ROBOT_IP=192.168.88.100 bash scripts/deploy_server.sh start</div>
+      <div>&nbsp;</div>
+      <div><span class="comment"># 4. PS5 teleop</span></div>
+      <div><span class="prompt">$ </span>python -m client.teleop \</div>
+      <div>    --robot-ip 192.168.88.100 --controller ps5</div>
+      <div>&nbsp;</div>
+      <div><span class="comment"># 5. Line follow (red, PS5 override)</span></div>
+      <div><span class="prompt">$ </span>python -m client.line_follow \</div>
+      <div>    --robot-ip 192.168.88.100 --colour red --controller ps5</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider" />
+
+<!-- DOCS -->
+<section>
+  <p class="section-label">Documentation</p>
+  <h2>Guides</h2>
+  <div class="grid grid-3">
+    <a class="card" href="getting-started.html" style="color:inherit">
+      <div class="card-icon">🚀</div>
+      <h3>Getting Started</h3>
+      <p>Full walkthrough from fresh clone to recording episodes and training a policy.</p>
+    </a>
+    <a class="card" href="wifi-and-ssh.html" style="color:inherit">
+      <div class="card-icon">📶</div>
+      <h3>Wi-Fi &amp; SSH</h3>
+      <p>Connect the robot to your shared network and find its IP address.</p>
+    </a>
+    <a class="card" href="cnn.html" style="color:inherit">
+      <div class="card-icon">🧠</div>
+      <h3>CNN Training</h3>
+      <p>Collect image episodes, train the CNN policy, and deploy it to the robot.</p>
+    </a>
+    <a class="card" href="data-collection.html" style="color:inherit">
+      <div class="card-icon">💾</div>
+      <h3>Data Collection</h3>
+      <p>Record, accept, and export labelled episodes for VLA or CNN training.</p>
+    </a>
+    <a class="card" href="troubleshooting.html" style="color:inherit">
+      <div class="card-icon">🔧</div>
+      <h3>Troubleshooting</h3>
+      <p>Camera issues, connection problems, ROS node conflicts, and more.</p>
+    </a>
+    <a class="card" href="https://github.com/MichaelAguadze/hexapodvla" style="color:inherit" target="_blank">
+      <div class="card-icon">📦</div>
+      <h3>Source Code</h3>
+      <p>Browse the full repository on GitHub — issues, PRs, and contributions welcome.</p>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>
+    Built at <a href="https://www.ncat.edu" target="_blank">NC A&amp;T State University</a> ·
+    Spring 2026 ·
+    <a href="https://github.com/MichaelAguadze/hexapodvla" target="_blank">GitHub</a>
+  </p>
+</footer>
+
+</body>
+</html>
