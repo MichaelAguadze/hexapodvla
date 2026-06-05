@@ -8,14 +8,14 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #0d1117;
-      --surface:   #161b22;
-      --border:    #30363d;
-      --accent:    #58a6ff;
-      --accent2:   #3fb950;
-      --text:      #e6edf3;
-      --muted:     #8b949e;
-      --card-bg:   #1c2128;
+      --bg:        #ffffff;
+      --surface:   #f6f8fa;
+      --border:    #d0d7de;
+      --accent:    #0969da;
+      --accent2:   #1a7f37;
+      --text:      #1f2328;
+      --muted:     #57606a;
+      --card-bg:   #ffffff;
       --radius:    10px;
     }
 
@@ -46,12 +46,12 @@
     .hero {
       text-align: center;
       padding: 6rem 2rem 4rem;
-      background: radial-gradient(ellipse at 50% 0%, #1f2d4a 0%, var(--bg) 65%);
+      background: radial-gradient(ellipse at 50% 0%, #dbeafe 0%, var(--bg) 65%);
     }
     .badge {
       display: inline-block;
-      background: rgba(88, 166, 255, 0.15);
-      border: 1px solid rgba(88, 166, 255, 0.3);
+      background: rgba(9, 105, 218, 0.07);
+      border: 1px solid rgba(9, 105, 218, 0.22);
       color: var(--accent);
       font-size: 0.78rem;
       font-weight: 600;
@@ -84,7 +84,7 @@
       transition: opacity 0.15s;
     }
     .btn:hover { opacity: 0.85; text-decoration: none; }
-    .btn-primary { background: var(--accent); color: #0d1117; }
+    .btn-primary { background: var(--accent); color: #ffffff; }
     .btn-secondary {
       background: transparent;
       border: 1px solid var(--border);
@@ -139,7 +139,7 @@
 
     /* ── CODE BLOCK ── */
     .code-block {
-      background: #010409;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 1.25rem 1.5rem;
@@ -163,8 +163,8 @@
     .step-num {
       flex-shrink: 0;
       width: 2rem; height: 2rem;
-      background: rgba(88, 166, 255, 0.15);
-      border: 1px solid rgba(88, 166, 255, 0.3);
+      background: rgba(9, 105, 218, 0.07);
+      border: 1px solid rgba(9, 105, 218, 0.22);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 0.85rem; color: var(--accent);
@@ -172,7 +172,7 @@
     .step-body h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.25rem; }
     .step-body p { color: var(--muted); font-size: 0.88rem; }
     .step-body code {
-      background: #010409; border: 1px solid var(--border);
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: 4px; padding: 0.1rem 0.4rem;
       font-size: 0.82rem; color: var(--accent2);
     }
@@ -244,7 +244,7 @@
       font-family: "SFMono-Regular", Consolas, monospace;
       font-size: 0.88rem;
       color: var(--text);
-      background: #010409;
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 6px;
       padding: 0.75rem 1rem;
@@ -265,7 +265,7 @@
     }
     .algo-table td {
       padding: 0.65rem 1rem;
-      border-bottom: 1px solid rgba(48,54,61,0.5);
+      border-bottom: 1px solid rgba(208,215,222,0.6);
       color: var(--text); vertical-align: top;
     }
     .algo-table td:first-child {
@@ -379,42 +379,42 @@
         <defs>
           <marker id="arr-blue" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#58a6ff"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#0969da"/>
           </marker>
           <marker id="arr-blue-r" markerWidth="7" markerHeight="7"
                   refX="2" refY="3.5" orient="auto">
-            <polygon points="7 0, 0 3.5, 7 7" fill="#58a6ff"/>
+            <polygon points="7 0, 0 3.5, 7 7" fill="#0969da"/>
           </marker>
           <marker id="arr-gray" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#8b949e"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#57606a"/>
           </marker>
           <marker id="arr-gray-r" markerWidth="7" markerHeight="7"
                   refX="2" refY="3.5" orient="auto">
-            <polygon points="7 0, 0 3.5, 7 7" fill="#8b949e"/>
+            <polygon points="7 0, 0 3.5, 7 7" fill="#57606a"/>
           </marker>
         </defs>
 
         <!-- Frame border -->
         <rect x="8" y="8" width="284" height="196" rx="4"
-              fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+              fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
 
         <!-- Non-ROI upper band -->
         <rect x="8" y="8" width="284" height="68" rx="4"
-              fill="#161b22"/>
+              fill="#e8ecf0"/>
         <line x1="8" y1="76" x2="292" y2="76"
-              stroke="#30363d" stroke-width="1" stroke-dasharray="5,4"/>
+              stroke="#d0d7de" stroke-width="1" stroke-dasharray="5,4"/>
         <text x="150" y="46" text-anchor="middle"
-              fill="#8b949e" font-size="11">above ROI (ignored)</text>
+              fill="#57606a" font-size="11">above ROI (ignored)</text>
 
         <!-- Centreline -->
         <line x1="150" y1="76" x2="150" y2="204"
-              stroke="#58a6ff" stroke-width="1.5"
+              stroke="#0969da" stroke-width="1.5"
               stroke-dasharray="5,4" opacity="0.65"/>
         <line x1="150" y1="8" x2="150" y2="76"
-              stroke="#58a6ff" stroke-width="1"
+              stroke="#0969da" stroke-width="1"
               stroke-dasharray="3,5" opacity="0.2"/>
-        <text x="154" y="91" fill="#58a6ff" font-size="10" opacity="0.85">w/2</text>
+        <text x="154" y="91" fill="#0969da" font-size="10" opacity="0.85">w/2</text>
 
         <!-- Line blob (tilted ellipse via transform) -->
         <g transform="translate(187,148) rotate(16)">
@@ -426,40 +426,40 @@
         </g>
 
         <!-- Centroid dot + leader -->
-        <circle cx="187" cy="148" r="5" fill="#3fb950"/>
+        <circle cx="187" cy="148" r="5" fill="#1a7f37"/>
         <line x1="190" y1="145" x2="228" y2="126"
-              stroke="#3fb950" stroke-width="1" opacity="0.6"/>
-        <text x="230" y="124" fill="#3fb950" font-size="10">centroid (c&#x2093;, c&#x1D67;)</text>
+              stroke="#1a7f37" stroke-width="1" opacity="0.6"/>
+        <text x="230" y="124" fill="#1a7f37" font-size="10">centroid (c&#x2093;, c&#x1D67;)</text>
 
         <!-- Guide lines dropping below frame -->
         <line x1="150" y1="204" x2="150" y2="222"
-              stroke="#58a6ff" stroke-width="1"
+              stroke="#0969da" stroke-width="1"
               stroke-dasharray="3,2" opacity="0.35"/>
         <line x1="187" y1="204" x2="187" y2="222"
-              stroke="#3fb950" stroke-width="1"
+              stroke="#1a7f37" stroke-width="1"
               stroke-dasharray="3,2" opacity="0.35"/>
 
         <!-- Lateral error double arrow -->
         <line x1="153" y1="226" x2="184" y2="226"
-              stroke="#58a6ff" stroke-width="2"
+              stroke="#0969da" stroke-width="2"
               marker-end="url(#arr-blue)"
               marker-start="url(#arr-blue-r)"/>
         <line x1="150" y1="220" x2="150" y2="232"
-              stroke="#58a6ff" stroke-width="1.5"/>
+              stroke="#0969da" stroke-width="1.5"/>
         <line x1="187" y1="220" x2="187" y2="232"
-              stroke="#58a6ff" stroke-width="1.5"/>
+              stroke="#0969da" stroke-width="1.5"/>
         <text x="168" y="245" text-anchor="middle"
-              fill="#58a6ff" font-size="10.5">
+              fill="#0969da" font-size="10.5">
           e&#x2097;&#x2090;&#x209C; = (c&#x2093; &#x2212; w/2) / (w/2)
         </text>
 
         <!-- Frame width arrow -->
         <line x1="11" y1="258" x2="289" y2="258"
-              stroke="#8b949e" stroke-width="1"
+              stroke="#57606a" stroke-width="1"
               marker-end="url(#arr-gray)"
               marker-start="url(#arr-gray-r)"/>
         <text x="150" y="270" text-anchor="middle"
-              fill="#8b949e" font-size="10">frame width w</text>
+              fill="#57606a" font-size="10">frame width w</text>
       </svg>
     </div>
 
@@ -471,19 +471,19 @@
         <defs>
           <marker id="arr-b2" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#58a6ff"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#0969da"/>
           </marker>
           <marker id="arr-b2r" markerWidth="7" markerHeight="7"
                   refX="2" refY="3.5" orient="auto">
-            <polygon points="7 0, 0 3.5, 7 7" fill="#58a6ff"/>
+            <polygon points="7 0, 0 3.5, 7 7" fill="#0969da"/>
           </marker>
           <marker id="arr-fwd" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#58a6ff" opacity="0.9"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#0969da" opacity="0.9"/>
           </marker>
           <marker id="arr-tan" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#8b949e" opacity="0.7"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#57606a" opacity="0.7"/>
           </marker>
         </defs>
 
@@ -498,66 +498,66 @@
 
         <!-- Line tangent arrow -->
         <line x1="78" y1="185" x2="78" y2="95"
-              stroke="#8b949e" stroke-width="1.5"
+              stroke="#57606a" stroke-width="1.5"
               marker-end="url(#arr-tan)" opacity="0.7"/>
         <text x="60" y="140" text-anchor="middle"
-              fill="#8b949e" font-size="9" opacity="0.7">tangent</text>
+              fill="#57606a" font-size="9" opacity="0.7">tangent</text>
 
         <!-- Robot body: centre at (190,148), rotated −20° (tilted right) -->
         <!-- In SVG, rotate(20) is clockwise -->
         <g transform="translate(190,148) rotate(20)">
           <!-- Body -->
           <rect x="-22" y="-34" width="44" height="68"
-                rx="4" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+                rx="4" fill="#e8ecf0" stroke="#d0d7de" stroke-width="1.5"/>
           <!-- Wheels (4 corners) -->
-          <rect x="-30" y="-28" width="8" height="16" rx="2" fill="#30363d"/>
-          <rect x=" 22" y="-28" width="8" height="16" rx="2" fill="#30363d"/>
-          <rect x="-30" y=" 12" width="8" height="16" rx="2" fill="#30363d"/>
-          <rect x=" 22" y=" 12" width="8" height="16" rx="2" fill="#30363d"/>
+          <rect x="-30" y="-28" width="8" height="16" rx="2" fill="#8c959f"/>
+          <rect x=" 22" y="-28" width="8" height="16" rx="2" fill="#8c959f"/>
+          <rect x="-30" y=" 12" width="8" height="16" rx="2" fill="#8c959f"/>
+          <rect x=" 22" y=" 12" width="8" height="16" rx="2" fill="#8c959f"/>
           <!-- Forward arrow (local up = robot forward) -->
           <line x1="0" y1="0" x2="0" y2="-52"
-                stroke="#58a6ff" stroke-width="2"
+                stroke="#0969da" stroke-width="2"
                 marker-end="url(#arr-fwd)"/>
           <!-- Centre dot -->
-          <circle cx="0" cy="0" r="3" fill="#e6edf3"/>
+          <circle cx="0" cy="0" r="3" fill="#1f2328"/>
         </g>
-        <text x="230" y="102" fill="#58a6ff" font-size="10">forward</text>
+        <text x="230" y="102" fill="#0969da" font-size="10">forward</text>
 
         <!-- Closest point on line to robot centre = (78, 148) -->
-        <circle cx="78" cy="148" r="3.5" fill="#58a6ff" opacity="0.9"/>
+        <circle cx="78" cy="148" r="3.5" fill="#0969da" opacity="0.9"/>
 
         <!-- Lateral offset arrow (horizontal, from line to robot centre) -->
         <line x1="82" y1="148" x2="186" y2="148"
-              stroke="#58a6ff" stroke-width="1.8"
+              stroke="#0969da" stroke-width="1.8"
               stroke-dasharray="5,3"
               marker-end="url(#arr-b2)"
               marker-start="url(#arr-b2r)"/>
         <text x="132" y="163" text-anchor="middle"
-              fill="#58a6ff" font-size="11" font-weight="600">d</text>
+              fill="#0969da" font-size="11" font-weight="600">d</text>
         <text x="132" y="175" text-anchor="middle"
-              fill="#58a6ff" font-size="9" opacity="0.75">(lateral offset)</text>
+              fill="#0969da" font-size="9" opacity="0.75">(lateral offset)</text>
 
         <!-- Heading error arc: reference (straight up) vs robot forward (rotated 20° CW) -->
         <!-- Reference tangent direction at robot centre, straight up -->
         <line x1="190" y1="100" x2="190" y2="148"
-              stroke="#8b949e" stroke-width="1"
+              stroke="#57606a" stroke-width="1"
               stroke-dasharray="4,3" opacity="0.55"/>
 
         <!-- Arc: from straight up (−90° in SVG = up) sweep 20° clockwise -->
         <!-- Centre (190,148), radius 48, from angle -90° sweep +20° -->
         <path d="M 190 100
                  A 48 48 0 0 1 206.4 101.6"
-              fill="none" stroke="#e3b341"
+              fill="none" stroke="#b45309"
               stroke-width="2" opacity="0.9"/>
         <!-- Arrow tip at end of arc -->
         <polygon points="204,96 210,104 198,105"
-                 fill="#e3b341" opacity="0.9"/>
-        <text x="214" y="108" fill="#e3b341" font-size="12" font-weight="700">α</text>
-        <text x="214" y="120" fill="#e3b341" font-size="9" opacity="0.8">(heading error)</text>
+                 fill="#b45309" opacity="0.9"/>
+        <text x="214" y="108" fill="#b45309" font-size="12" font-weight="700">α</text>
+        <text x="214" y="120" fill="#b45309" font-size="9" opacity="0.8">(heading error)</text>
 
         <!-- Legend -->
         <text x="150" y="260" text-anchor="middle"
-              fill="#8b949e" font-size="9" opacity="0.7">
+              fill="#57606a" font-size="9" opacity="0.7">
           robot displaced right + angled right → both errors negative → turn left ✓
         </text>
       </svg>
@@ -586,7 +586,7 @@
         <strong style="color:var(--text)">Lateral error</strong> — how far the line's centroid
         sits from the horizontal centre of the frame.<br><br>
         <strong style="color:var(--text)">Heading error</strong> — angle between the
-        <code style="background:#010409;border:1px solid var(--border);border-radius:4px;
+        <code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;
         padding:0.1rem 0.35rem;font-size:0.8rem;color:var(--accent2)">cv2.fitLine</code>
         direction and the camera's vertical axis (robot's forward).
         Positive = line tilts right = robot is turned left of the line.
