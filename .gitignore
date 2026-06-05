@@ -27,3 +27,11 @@ Thumbs.db
 
 #External files
 source_code/
+docs/hexapodvla_docs.tex
+docs/hexapodvla_docs.pdf
+docs/hexapodvla_docs.aux
+docs/hexapodvla_docs 2.aux
+docs/hexapodvla_docs.fdb_latexmk
+docs/hexapodvla_docs.fls
+docs/hexapodvla_docs.out
+docs/hexapodvla_docs.toc
