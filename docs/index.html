@@ -187,6 +187,95 @@
       position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
     }
 
+    /* ── ALGORITHM SECTION ── */
+    .algo-pipeline {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 0;
+      margin: 2rem 0;
+    }
+    .pipe-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.6rem 1rem;
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--text); text-align: center;
+      white-space: nowrap;
+    }
+    .pipe-arrow {
+      color: var(--muted); font-size: 1.1rem;
+      padding: 0 0.3rem; flex-shrink: 0;
+    }
+    .algo-diagrams {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .algo-diagram-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+    }
+    .algo-diagram-card h4 {
+      font-size: 0.88rem; font-weight: 700;
+      color: var(--text); margin-bottom: 0.75rem;
+      text-align: center;
+    }
+    .algo-diagram-card svg { display: block; width: 100%; height: auto; }
+    .algo-equations {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.25rem;
+      margin: 2rem 0;
+    }
+    .eq-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+    }
+    .eq-card h4 {
+      font-size: 0.88rem; font-weight: 700;
+      margin-bottom: 0.75rem; color: var(--accent);
+    }
+    .eq-card p { color: var(--muted); font-size: 0.85rem; margin-top: 0.5rem; }
+    .eq-formula {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.88rem;
+      color: var(--text);
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.75rem 1rem;
+      line-height: 1.9;
+    }
+    .eq-formula .sym { color: var(--accent); }
+    .eq-formula .val { color: var(--accent2); }
+    .eq-formula .muted { color: var(--muted); }
+    .algo-table {
+      width: 100%; border-collapse: collapse; margin-top: 2rem;
+      font-size: 0.85rem;
+    }
+    .algo-table th {
+      text-align: left; padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted); font-weight: 600; font-size: 0.78rem;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .algo-table td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid rgba(48,54,61,0.5);
+      color: var(--text); vertical-align: top;
+    }
+    .algo-table td:first-child {
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.82rem; color: var(--accent2);
+    }
+    .algo-table td:nth-child(2) { color: var(--muted); text-align: center; }
+    .algo-table td:nth-child(3) { color: var(--muted); }
+    .algo-table tr:last-child td { border-bottom: none; }
+
     /* ── DIVIDER ── */
     .divider { border: none; border-top: 1px solid var(--border); margin: 0; }
 
@@ -209,6 +298,7 @@
   <span class="nav-brand">⬡ HexapodVLA</span>
   <div class="nav-links">
     <a href="#features">Features</a>
+    <a href="#algorithm">Algorithm</a>
     <a href="#architecture">Architecture</a>
     <a href="#quickstart">Quick Start</a>
     <a href="getting-started.html">Docs</a>
@@ -250,6 +340,330 @@
       allowfullscreen>
     </iframe>
   </div>
+</section>
+
+<hr class="divider" />
+
+<!-- LINE-FOLLOWING ALGORITHM -->
+<section id="algorithm">
+  <p class="section-label">Under the hood</p>
+  <h2>Line-Following Algorithm</h2>
+  <p class="lead">
+    A reactive PD controller running at 10 Hz. No map, no path plan — just
+    the current camera frame, two geometric error signals, and a turn-rate command.
+  </p>
+
+  <!-- Pipeline -->
+  <div class="algo-pipeline">
+    <div class="pipe-box">📷 Camera frame</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🎨 HSV colour mask</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🔍 Largest contour</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">📐 Centroid + fitLine</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🎛️ PD controller</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🤖 Robot velocity</div>
+  </div>
+
+  <!-- Geometric diagrams -->
+  <div class="algo-diagrams">
+
+    <!-- Diagram 1: Camera frame view -->
+    <div class="algo-diagram-card">
+      <h4>Camera Frame — Lateral Error</h4>
+      <svg viewBox="0 0 300 268" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <defs>
+          <marker id="arr-blue" markerWidth="7" markerHeight="7"
+                  refX="5" refY="3.5" orient="auto">
+            <polygon points="0 0, 7 3.5, 0 7" fill="#58a6ff"/>
+          </marker>
+          <marker id="arr-blue-r" markerWidth="7" markerHeight="7"
+                  refX="2" refY="3.5" orient="auto">
+            <polygon points="7 0, 0 3.5, 7 7" fill="#58a6ff"/>
+          </marker>
+          <marker id="arr-gray" markerWidth="7" markerHeight="7"
+                  refX="5" refY="3.5" orient="auto">
+            <polygon points="0 0, 7 3.5, 0 7" fill="#8b949e"/>
+          </marker>
+          <marker id="arr-gray-r" markerWidth="7" markerHeight="7"
+                  refX="2" refY="3.5" orient="auto">
+            <polygon points="7 0, 0 3.5, 7 7" fill="#8b949e"/>
+          </marker>
+        </defs>
+
+        <!-- Frame border -->
+        <rect x="8" y="8" width="284" height="196" rx="4"
+              fill="#0d1117" stroke="#30363d" stroke-width="1.5"/>
+
+        <!-- Non-ROI upper band -->
+        <rect x="8" y="8" width="284" height="68" rx="4"
+              fill="#161b22"/>
+        <line x1="8" y1="76" x2="292" y2="76"
+              stroke="#30363d" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="150" y="46" text-anchor="middle"
+              fill="#8b949e" font-size="11">above ROI (ignored)</text>
+
+        <!-- Centreline -->
+        <line x1="150" y1="76" x2="150" y2="204"
+              stroke="#58a6ff" stroke-width="1.5"
+              stroke-dasharray="5,4" opacity="0.65"/>
+        <line x1="150" y1="8" x2="150" y2="76"
+              stroke="#58a6ff" stroke-width="1"
+              stroke-dasharray="3,5" opacity="0.2"/>
+        <text x="154" y="91" fill="#58a6ff" font-size="10" opacity="0.85">w/2</text>
+
+        <!-- Line blob (tilted ellipse via transform) -->
+        <g transform="translate(187,148) rotate(16)">
+          <ellipse cx="0" cy="0" rx="17" ry="52"
+                   fill="#f85149" opacity="0.18"/>
+          <ellipse cx="0" cy="0" rx="17" ry="52"
+                   fill="none" stroke="#f85149"
+                   stroke-width="1.5" opacity="0.75"/>
+        </g>
+
+        <!-- Centroid dot + leader -->
+        <circle cx="187" cy="148" r="5" fill="#3fb950"/>
+        <line x1="190" y1="145" x2="228" y2="126"
+              stroke="#3fb950" stroke-width="1" opacity="0.6"/>
+        <text x="230" y="124" fill="#3fb950" font-size="10">centroid (c&#x2093;, c&#x1D67;)</text>
+
+        <!-- Guide lines dropping below frame -->
+        <line x1="150" y1="204" x2="150" y2="222"
+              stroke="#58a6ff" stroke-width="1"
+              stroke-dasharray="3,2" opacity="0.35"/>
+        <line x1="187" y1="204" x2="187" y2="222"
+              stroke="#3fb950" stroke-width="1"
+              stroke-dasharray="3,2" opacity="0.35"/>
+
+        <!-- Lateral error double arrow -->
+        <line x1="153" y1="226" x2="184" y2="226"
+              stroke="#58a6ff" stroke-width="2"
+              marker-end="url(#arr-blue)"
+              marker-start="url(#arr-blue-r)"/>
+        <line x1="150" y1="220" x2="150" y2="232"
+              stroke="#58a6ff" stroke-width="1.5"/>
+        <line x1="187" y1="220" x2="187" y2="232"
+              stroke="#58a6ff" stroke-width="1.5"/>
+        <text x="168" y="245" text-anchor="middle"
+              fill="#58a6ff" font-size="10.5">
+          e&#x2097;&#x2090;&#x209C; = (c&#x2093; &#x2212; w/2) / (w/2)
+        </text>
+
+        <!-- Frame width arrow -->
+        <line x1="11" y1="258" x2="289" y2="258"
+              stroke="#8b949e" stroke-width="1"
+              marker-end="url(#arr-gray)"
+              marker-start="url(#arr-gray-r)"/>
+        <text x="150" y="270" text-anchor="middle"
+              fill="#8b949e" font-size="10">frame width w</text>
+      </svg>
+    </div>
+
+    <!-- Diagram 2: Bird's-eye view -->
+    <div class="algo-diagram-card">
+      <h4>Bird's-Eye View — Both Error Signals</h4>
+      <svg viewBox="0 0 300 268" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <defs>
+          <marker id="arr-b2" markerWidth="7" markerHeight="7"
+                  refX="5" refY="3.5" orient="auto">
+            <polygon points="0 0, 7 3.5, 0 7" fill="#58a6ff"/>
+          </marker>
+          <marker id="arr-b2r" markerWidth="7" markerHeight="7"
+                  refX="2" refY="3.5" orient="auto">
+            <polygon points="7 0, 0 3.5, 7 7" fill="#58a6ff"/>
+          </marker>
+          <marker id="arr-fwd" markerWidth="7" markerHeight="7"
+                  refX="5" refY="3.5" orient="auto">
+            <polygon points="0 0, 7 3.5, 0 7" fill="#58a6ff" opacity="0.9"/>
+          </marker>
+          <marker id="arr-tan" markerWidth="7" markerHeight="7"
+                  refX="5" refY="3.5" orient="auto">
+            <polygon points="0 0, 7 3.5, 0 7" fill="#8b949e" opacity="0.7"/>
+          </marker>
+        </defs>
+
+        <!-- Floor line (red stripe, vertical, left side) -->
+        <rect x="68" y="10" width="20" height="248"
+              fill="#f85149" opacity="0.18" rx="2"/>
+        <line x1="78" y1="10" x2="78" y2="258"
+              stroke="#f85149" stroke-width="1.5"
+              stroke-dasharray="6,0" opacity="0.6"/>
+        <text x="78" y="7" text-anchor="middle"
+              fill="#f85149" font-size="10" opacity="0.85">floor line</text>
+
+        <!-- Line tangent arrow -->
+        <line x1="78" y1="185" x2="78" y2="95"
+              stroke="#8b949e" stroke-width="1.5"
+              marker-end="url(#arr-tan)" opacity="0.7"/>
+        <text x="60" y="140" text-anchor="middle"
+              fill="#8b949e" font-size="9" opacity="0.7">tangent</text>
+
+        <!-- Robot body: centre at (190,148), rotated −20° (tilted right) -->
+        <!-- In SVG, rotate(20) is clockwise -->
+        <g transform="translate(190,148) rotate(20)">
+          <!-- Body -->
+          <rect x="-22" y="-34" width="44" height="68"
+                rx="4" fill="#1c2128" stroke="#30363d" stroke-width="1.5"/>
+          <!-- Wheels (4 corners) -->
+          <rect x="-30" y="-28" width="8" height="16" rx="2" fill="#30363d"/>
+          <rect x=" 22" y="-28" width="8" height="16" rx="2" fill="#30363d"/>
+          <rect x="-30" y=" 12" width="8" height="16" rx="2" fill="#30363d"/>
+          <rect x=" 22" y=" 12" width="8" height="16" rx="2" fill="#30363d"/>
+          <!-- Forward arrow (local up = robot forward) -->
+          <line x1="0" y1="0" x2="0" y2="-52"
+                stroke="#58a6ff" stroke-width="2"
+                marker-end="url(#arr-fwd)"/>
+          <!-- Centre dot -->
+          <circle cx="0" cy="0" r="3" fill="#e6edf3"/>
+        </g>
+        <text x="230" y="102" fill="#58a6ff" font-size="10">forward</text>
+
+        <!-- Closest point on line to robot centre = (78, 148) -->
+        <circle cx="78" cy="148" r="3.5" fill="#58a6ff" opacity="0.9"/>
+
+        <!-- Lateral offset arrow (horizontal, from line to robot centre) -->
+        <line x1="82" y1="148" x2="186" y2="148"
+              stroke="#58a6ff" stroke-width="1.8"
+              stroke-dasharray="5,3"
+              marker-end="url(#arr-b2)"
+              marker-start="url(#arr-b2r)"/>
+        <text x="132" y="163" text-anchor="middle"
+              fill="#58a6ff" font-size="11" font-weight="600">d</text>
+        <text x="132" y="175" text-anchor="middle"
+              fill="#58a6ff" font-size="9" opacity="0.75">(lateral offset)</text>
+
+        <!-- Heading error arc: reference (straight up) vs robot forward (rotated 20° CW) -->
+        <!-- Reference tangent direction at robot centre, straight up -->
+        <line x1="190" y1="100" x2="190" y2="148"
+              stroke="#8b949e" stroke-width="1"
+              stroke-dasharray="4,3" opacity="0.55"/>
+
+        <!-- Arc: from straight up (−90° in SVG = up) sweep 20° clockwise -->
+        <!-- Centre (190,148), radius 48, from angle -90° sweep +20° -->
+        <path d="M 190 100
+                 A 48 48 0 0 1 206.4 101.6"
+              fill="none" stroke="#e3b341"
+              stroke-width="2" opacity="0.9"/>
+        <!-- Arrow tip at end of arc -->
+        <polygon points="204,96 210,104 198,105"
+                 fill="#e3b341" opacity="0.9"/>
+        <text x="214" y="108" fill="#e3b341" font-size="12" font-weight="700">α</text>
+        <text x="214" y="120" fill="#e3b341" font-size="9" opacity="0.8">(heading error)</text>
+
+        <!-- Legend -->
+        <text x="150" y="260" text-anchor="middle"
+              fill="#8b949e" font-size="9" opacity="0.7">
+          robot displaced right + angled right → both errors negative → turn left ✓
+        </text>
+      </svg>
+    </div>
+  </div><!-- .algo-diagrams -->
+
+  <!-- Equations -->
+  <div class="algo-equations">
+    <div class="eq-card">
+      <h4>Two Error Signals</h4>
+      <div class="eq-formula">
+        <div>
+          <span class="sym">e_lat</span>
+          <span class="muted"> = </span>
+          <span class="val">(cₓ − w/2) / (w/2)</span>
+          <span class="muted">  ∈ [−1, 1]</span>
+        </div>
+        <div style="margin-top:0.35rem">
+          <span class="sym">e_hdg</span>
+          <span class="muted"> = </span>
+          <span class="val">atan2(v̂ₓ, v̂ᵧ) / 90°</span>
+          <span class="muted">  ∈ [−1, 1]</span>
+        </div>
+      </div>
+      <p>
+        <strong style="color:var(--text)">Lateral error</strong> — how far the line's centroid
+        sits from the horizontal centre of the frame.<br><br>
+        <strong style="color:var(--text)">Heading error</strong> — angle between the
+        <code style="background:#010409;border:1px solid var(--border);border-radius:4px;
+        padding:0.1rem 0.35rem;font-size:0.8rem;color:var(--accent2)">cv2.fitLine</code>
+        direction and the camera's vertical axis (robot's forward).
+        Positive = line tilts right = robot is turned left of the line.
+      </p>
+    </div>
+
+    <div class="eq-card">
+      <h4>PD Control Law</h4>
+      <div class="eq-formula">
+        <div>
+          <span class="sym">ω</span>
+          <span class="muted"> = −(</span>
+          <span class="val">Kp</span><span class="muted">·</span><span class="sym">e_lat</span>
+          <span class="muted"> + </span>
+          <span class="val">Kd</span><span class="muted">·ė_lat</span>
+          <span class="muted"> + </span>
+          <span class="val">Kp_hdg</span><span class="muted">·</span><span class="sym">e_hdg</span>
+          <span class="muted">)</span>
+        </div>
+        <div style="margin-top:0.35rem">
+          <span class="sym">vₓ</span>
+          <span class="muted"> = v_base · (1 − γ · min(|e_lat|+|e_hdg|, 1))</span>
+        </div>
+      </div>
+      <p>
+        The heading term makes correction <strong style="color:var(--text)">predictive</strong>:
+        it starts realigning the body angle before lateral drift grows large,
+        cutting overshoot on curves. Speed scales down with total misalignment
+        so the robot slows on tight turns.
+      </p>
+    </div>
+  </div><!-- .algo-equations -->
+
+  <!-- Parameter table -->
+  <table class="algo-table">
+    <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Default</th>
+        <th>Effect</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>kp</td><td>60.0</td>
+        <td>Proportional lateral gain — higher corrects drift faster but risks oscillation.</td>
+      </tr>
+      <tr>
+        <td>kp_heading</td><td>30.0</td>
+        <td>Heading gain — aligns body angle with the line before lateral error grows.</td>
+      </tr>
+      <tr>
+        <td>kd</td><td>8.0</td>
+        <td>Derivative damping — reduces overshoot as the robot approaches centre.</td>
+      </tr>
+      <tr>
+        <td>base_speed</td><td>30.0</td>
+        <td>Forward duty at zero error.</td>
+      </tr>
+      <tr>
+        <td>turn_reduction</td><td>0.6</td>
+        <td>Fraction of base speed removed when combined misalignment reaches 1.0.</td>
+      </tr>
+      <tr>
+        <td>roi_top</td><td>0.4</td>
+        <td>Top of the look-ahead region as a fraction of frame height.</td>
+      </tr>
+      <tr>
+        <td>lost_timeout</td><td>2.0 s</td>
+        <td>Time without a detected contour before full stop.</td>
+      </tr>
+      <tr>
+        <td>memory_duration</td><td>0.6 s</td>
+        <td>Coast duration — last commands held while the line is briefly invisible.</td>
+      </tr>
+    </tbody>
+  </table>
 </section>
 
 <hr class="divider" />
