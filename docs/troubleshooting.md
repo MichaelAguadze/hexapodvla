@@ -11,7 +11,7 @@
 - Confirm your laptop is actually connected to the `HW` hotspot.
 - Try `ping 192.168.149.1` first.
 - Reboot the robot and wait for the hotspot to appear again.
-- If your image uses different defaults, check the official Hiwonder setup guide linked in the README.
+- If your image uses different defaults, check the official XiaoRGEEK setup guide linked in the README.
 
 ## The `nmcli` command disconnects SSH
 
@@ -39,7 +39,7 @@ Also make sure you are running the client locally on the laptop desktop session,
 
 ## The robot server fails with `ros_robot_controller_sdk` missing
 
-Run the server on the hexapod image that ships with the robot, or on an environment where the Hiwonder SDK is already installed. This dependency is hardware-specific and is not installed from `pip`.
+Run the server on the hexapod image that ships with the robot, or on an environment where the XiaoRGEEK SDK is already installed. This dependency is hardware-specific and is not installed from `pip`.
 
 ## The robot server fails with `cv2` missing
 
@@ -122,7 +122,7 @@ Fix:
 1. Reconnect to the hotspot.
 2. SSH to `192.168.149.1`.
 3. Re-run the `nmcli` connection.
-4. Update `~/hiwonder-toolbox/wifi_conf.py` so shared Wi-Fi is the saved default.
+4. Update `~/XiaoRGEEK-toolbox/wifi_conf.py` so shared Wi-Fi is the saved default.
 
 ## Battery and power notes
 

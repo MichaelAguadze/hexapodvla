@@ -46,7 +46,7 @@ pip install -r requirements-laptop.txt
 
 1. Power on the hexapod and wait for it to boot.
 2. On your laptop, join the Wi-Fi network that starts with `HW`.
-3. The default hotspot password is usually `hiwonder`.
+3. The default hotspot password is usually `XiaoRGEEK`.
 4. SSH into the robot:
 
 ```bash
@@ -248,7 +248,7 @@ That prints a per-frame table with:
 - The recording client can talk to the robot server directly while saving data on the laptop.
 - It is much easier for a classroom setup where multiple students need a repeatable workflow.
 
-After your first successful `nmcli` connection, you can make the setup persistent with `~/hiwonder-toolbox/wifi_conf.py`. The full steps are in the Wi-Fi guide.
+After your first successful `nmcli` connection, you can make the setup persistent with `~/XiaoRGEEK-toolbox/wifi_conf.py`. The full steps are in the Wi-Fi guide.
 
 ## Docs
 
@@ -313,10 +313,10 @@ bash scripts/deploy_server.sh start
 - Temporary validation outputs such as `data/workflow_validation/` are safe to delete after you finish checking the pipeline.
 - The recorder now saves `observation.state` as the previous normalized action, not the current action, to avoid target leakage during training.
 - `ros_robot_controller_sdk` is hexapod-specific and comes from the robot image, not from `pip`.
-- If your robot image differs from the common Hiwonder defaults, check the vendor network guide first and then come back to this repo.
+- If your robot image differs from the common XiaoRGEEK defaults, check the vendor network guide first and then come back to this repo.
 
 ## References
 
-- [Hiwonder hexapod network setup](https://docs.hiwonder.com/projects/hexapod/en/advanced/docs/7.network_configuration.html)
-- [Hiwonder hexapod getting ready](https://docs.hiwonder.com/projects/hexapod/en/latest/docs/1.getting_ready.html)
+- [XiaoRGEEK hexapod network setup](https://docs.XiaoRGEEK.com/projects/hexapod/en/advanced/docs/7.network_configuration.html)
+- [XiaoRGEEK hexapod getting ready](https://docs.XiaoRGEEK.com/projects/hexapod/en/latest/docs/1.getting_ready.html)
 - [Hugging Face LeRobot datasets docs](https://huggingface.co/docs/lerobot/main/en/lerobot-dataset-v3)

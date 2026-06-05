@@ -17,7 +17,7 @@ In AP mode, the robot creates its own hotspot. This is useful when you first pow
 Typical defaults on hexapod Advanced images:
 
 - Hotspot name starts with `HW`
-- Hotspot password is `hiwonder`
+- Hotspot password is `XiaoRGEEK`
 - Robot IP is `192.168.149.1`
 
 ### Shared Wi-Fi mode
@@ -95,7 +95,7 @@ After the first successful `nmcli` connection, you can make the shared Wi-Fi con
 On the robot:
 
 ```bash
-cd ~/hiwonder-toolbox
+cd ~/XiaoRGEEK-toolbox
 sudo nano wifi_conf.py
 ```
 
@@ -140,5 +140,5 @@ Once both devices are on the same network, you can SSH, install packages, start 
 
 ## References
 
-- [Hiwonder hexapod network setup](https://docs.hiwonder.com/projects/hexapod/en/advanced/docs/7.network_configuration.html)
-- [Hiwonder hexapod getting ready](https://docs.hiwonder.com/projects/hexapod/en/latest/docs/1.getting_ready.html)
+- [XiaoRGEEK hexapod network setup](https://docs.XiaoRGEEK.com/projects/hexapod/en/advanced/docs/7.network_configuration.html)
+- [XiaoRGEEK hexapod getting ready](https://docs.XiaoRGEEK.com/projects/hexapod/en/latest/docs/1.getting_ready.html)
