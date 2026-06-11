@@ -128,20 +128,25 @@ class LineFollower:
     sticks hands control back to the algorithm automatically.
 
     Args:
-        client:         Connected RobotClient instance.
-        colour:         Line colour — "red", "white", or "blue".
-        base_speed:     Forward duty when centred on the line.
-        max_duty:       Clamp for all duty outputs.
-        kp:             Proportional gain for the steering PD controller.
-        kd:             Derivative  gain for the steering PD controller.
-        turn_reduction: How much to slow forward speed on sharp turns (0-1).
-        roi_top:        Top of the region-of-interest as a fraction of frame
-                        height (0 = top, 1 = bottom).
-        lost_timeout:   Seconds without a detected line before stopping.
-        loop_hz:        Target control-loop frequency.
-        show_preview:   Display a debug window (requires a local display).
-        controller:     Optional PS5Controller for manual override.
-        manual_threshold: Minimum stick magnitude to trigger manual override.
+        client:               Connected RobotClient instance.
+        colour:               Line colour — "red", "white", or "blue".
+        base_speed:           Forward duty when centred on the line.
+        max_duty:             Clamp for all duty outputs.
+        kp:                   Proportional gain for the steering PD controller.
+        kd:                   Derivative  gain for the steering PD controller.
+        turn_reduction:       How much to slow forward speed on sharp turns (0-1).
+        roi_top:              Top of the region-of-interest as a fraction of frame
+                              height (0 = top, 1 = bottom).
+        lost_timeout:         Seconds without a detected line before stopping.
+        loop_hz:              Target control-loop frequency.
+        show_preview:         Display a debug window (requires a local display).
+        controller:           Optional PS5Controller for manual override.
+        manual_threshold:     Minimum stick magnitude to trigger manual override.
+        obstacle_stop:        Stop when an obstacle is detected inside the line ROI.
+        obs_color_thresh:     BGR colour distance from the floor sample to count a
+                              pixel as non-floor / obstacle.
+        obs_presence_thresh:  Fraction of the ROI that must contain non-floor,
+                              non-line pixels before triggering a stop.
     """
 
     def __init__(
@@ -161,6 +166,9 @@ class LineFollower:
         controller=None,
         manual_threshold: float = 5.0,
         memory_duration: float = 0.6,
+        obstacle_stop: bool = False,
+        obs_color_thresh: float = 40.0,
+        obs_presence_thresh: float = 0.25,
     ):
         if colour not in _COLOUR_RANGES:
             raise ValueError(
@@ -183,6 +191,11 @@ class LineFollower:
         self.controller       = controller
         self.manual_threshold = manual_threshold
         self.memory_duration  = memory_duration
+
+        self._obstacle_stop       = obstacle_stop
+        self._obs_color_thresh    = obs_color_thresh
+        self._obs_presence_thresh = obs_presence_thresh
+        self._obstacle_active   = False
 
         self._prev_error   = 0.0
         self._last_seen    = time.monotonic()
@@ -258,6 +271,22 @@ class LineFollower:
         h, w = frame_bgr.shape[:2]
         frame_cx = w / 2.0
 
+        # --- Obstacle detection (runs on the full frame before line logic) ---
+        if self._obstacle_stop:
+            if self._detect_obstacle(frame_bgr):
+                self._stop_robot()
+                if not self._obstacle_active:
+                    self._obstacle_active = True
+                    try:
+                        self.client.beep(freq=1900, duration=0.2)
+                    except Exception:
+                        pass
+                self._prev_error = 0.0
+                print("\r[LineFollower] OBSTACLE — stopped.                    ",
+                      end="", flush=True)
+                return
+            self._obstacle_active = False
+
         # Crop to the lower portion of the frame (look-ahead ROI)
         roi_y = int(h * self.roi_top)
         roi = frame_bgr[roi_y:, :]
@@ -332,6 +361,46 @@ class LineFollower:
             self._draw_preview(frame_bgr, roi_y, mask, (cx, cy + roi_y),
                                lateral_error, vx, omega)
 
+    def _detect_obstacle(self, frame_bgr: np.ndarray) -> bool:
+        """Return True if an obstacle is present inside the line ROI.
+
+        Samples the floor colour from the bottom strip (always bare floor),
+        then counts pixels inside the ROI that are neither floor-coloured nor
+        line-coloured.  Using both exclusions prevents the line tape itself
+        from triggering a false stop.
+        """
+        h, w = frame_bgr.shape[:2]
+
+        # Floor colour reference: bottom 15% of frame, centre 50% width
+        floor_strip = frame_bgr[int(h * 0.85):, int(w * 0.25):int(w * 0.75)]
+        if floor_strip.size == 0:
+            return False
+        floor_color = np.median(
+            floor_strip.reshape(-1, 3), axis=0
+        ).astype(np.float32)
+
+        # Detection zone: the line ROI (above floor sample), centre 60% width
+        obs_top = int(h * self.roi_top)
+        obs_bot = int(h * 0.85)
+        if obs_bot <= obs_top:
+            return False
+        zone_bgr = frame_bgr[obs_top:obs_bot, int(w * 0.2):int(w * 0.8)]
+        if zone_bgr.size == 0:
+            return False
+
+        # Non-floor mask: pixels whose BGR distance from the floor exceeds threshold
+        diff = zone_bgr.astype(np.float32) - floor_color
+        dist = np.sqrt((diff ** 2).sum(axis=2))
+        non_floor = dist > self._obs_color_thresh
+
+        # Non-line mask: pixels that do NOT match the tracked line colour
+        zone_hsv = cv2.cvtColor(zone_bgr, cv2.COLOR_BGR2HSV)
+        line_mask = _build_mask(zone_hsv, self.colour)
+        non_line = line_mask == 0
+
+        # Obstacle: non-floor AND non-line (excludes floor and the tape itself)
+        return float((non_floor & non_line).mean()) > self._obs_presence_thresh
+
     def _stop_robot(self) -> None:
         try:
             self.client.stop()
@@ -356,6 +425,17 @@ class LineFollower:
         cv2.line(vis, (0, roi_y), (w, roi_y), (0, 255, 255), 1)
         # Frame centre
         cv2.line(vis, (w // 2, roi_y), (w // 2, h), (255, 255, 0), 1)
+
+        # Obstacle detection zone (orange box, inside ROI)
+        if self._obstacle_stop:
+            obs_top = roi_y
+            obs_bot = int(h * 0.85)
+            ox1, ox2 = int(w * 0.2), int(w * 0.8)
+            color = (0, 0, 255) if self._obstacle_active else (0, 140, 255)
+            cv2.rectangle(vis, (ox1, obs_top), (ox2, obs_bot), color, 2)
+            if self._obstacle_active:
+                cv2.putText(vis, "OBSTACLE", (ox1 + 4, obs_top + 20),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
         # Mask overlay (coloured tint)
         colour_map = {"red": (0, 0, 180), "white": (200, 200, 200), "blue": (180, 0, 0)}

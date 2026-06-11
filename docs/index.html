@@ -303,6 +303,7 @@
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#algorithm">Algorithm</a>
+    <a href="#obstacle">Obstacle Avoidance</a>
     <a href="#architecture">Architecture</a>
     <a href="#quickstart">Quick Start</a>
     <a href="getting-started.html">Docs</a>
@@ -668,6 +669,271 @@
       </tr>
     </tbody>
   </table>
+</section>
+
+<hr class="divider" />
+
+<!-- OBSTACLE AVOIDANCE ALGORITHM -->
+<section id="obstacle">
+  <p class="section-label">Built-in safety</p>
+  <h2>Camera-Based Obstacle Avoidance</h2>
+  <p class="lead">
+    No extra sensors — the same camera frame used for line following detects obstacles too.
+    A floor colour model built fresh every tick separates floor, line tape, and foreign objects.
+  </p>
+
+  <!-- Modified pipeline showing the short-circuit branch -->
+  <div class="algo-pipeline">
+    <div class="pipe-box">📷 Camera frame</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box" style="border-color:#b45309;background:rgba(180,83,9,0.06);">🚧 Obstacle check</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🎨 HSV mask</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">📐 Centroid + fitLine</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🎛️ PD controller</div>
+    <span class="pipe-arrow">→</span>
+    <div class="pipe-box">🤖 Robot velocity</div>
+  </div>
+  <p style="font-size:0.82rem;color:var(--muted);margin-top:0.5rem;">
+    ↳ obstacle detected →
+    <strong style="color:#b45309;">Stop + Beep</strong>
+    — skips the PD controller for that tick; resumes automatically when the path clears.
+  </p>
+
+  <!-- Diagrams -->
+  <div class="algo-diagrams">
+
+    <!-- Diagram 1: Camera frame zone layout -->
+    <div class="algo-diagram-card">
+      <h4>Camera Frame — Detection Zones</h4>
+      <svg viewBox="0 0 270 228" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+
+        <!-- Frame border -->
+        <rect x="18" y="8" width="222" height="185" rx="3"
+              fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+
+        <!-- Ignored: top 40% (185*0.4 = 74px, y: 8→82) -->
+        <rect x="18" y="8" width="222" height="74" rx="3" fill="#e8ecf0"/>
+        <line x1="18" y1="82" x2="240" y2="82"
+              stroke="#d0d7de" stroke-width="1" stroke-dasharray="5,4"/>
+        <text x="129" y="48" text-anchor="middle"
+              fill="#57606a" font-size="10">above ROI — ignored</text>
+
+        <!-- Line ROI: 40–100% (y: 82→193), full width, blue tint -->
+        <rect x="18" y="82" width="222" height="111" fill="rgba(9,105,218,0.06)"/>
+
+        <!-- Obstacle detection sub-zone: centre 60% (x: 62→196), 40–85% (y: 82→166, 84px) -->
+        <rect x="62" y="82" width="134" height="84"
+              fill="rgba(180,83,9,0.11)" stroke="#b45309" stroke-width="1.5"/>
+
+        <!-- Floor sample: centre 50% (x: 73→185), 85–100% (y: 166→193, 27px) -->
+        <line x1="73" y1="166" x2="185" y2="166"
+              stroke="#1a7f37" stroke-width="1" stroke-dasharray="4,3"/>
+        <rect x="73" y="166" width="112" height="27"
+              fill="rgba(26,127,55,0.14)" stroke="#1a7f37" stroke-width="1.5"/>
+
+        <!-- Detection zone labels -->
+        <text x="129" y="118" text-anchor="middle"
+              fill="#b45309" font-size="9.5" font-weight="600">obstacle detection</text>
+        <text x="129" y="131" text-anchor="middle"
+              fill="#b45309" font-size="8.5">non-floor ∧ non-line pixels</text>
+
+        <!-- Line ROI side label -->
+        <text x="28" y="133" fill="#0969da" font-size="8.5" opacity="0.75">line</text>
+        <text x="28" y="145" fill="#0969da" font-size="8.5" opacity="0.75">ROI</text>
+
+        <!-- Floor sample label -->
+        <text x="129" y="184" text-anchor="middle"
+              fill="#1a7f37" font-size="9">floor sample (colour reference)</text>
+
+        <!-- roi_top label -->
+        <text x="244" y="86" fill="#57606a" font-size="8">roi_top</text>
+
+        <!-- Percentage annotations (right) -->
+        <text x="246" y="48" fill="#57606a" font-size="8.5" opacity="0.65">40%</text>
+        <text x="246" y="128" fill="#57606a" font-size="8.5" opacity="0.65">45%</text>
+        <text x="246" y="181" fill="#57606a" font-size="8.5" opacity="0.65">15%</text>
+
+        <!-- Near / far indicator -->
+        <text x="8" y="18" fill="#57606a" font-size="8" opacity="0.5">far</text>
+        <text x="7" y="191" fill="#57606a" font-size="8" opacity="0.5">near</text>
+
+        <!-- Caption -->
+        <text x="129" y="218" text-anchor="middle"
+              fill="#57606a" font-size="9.5">Camera frame (not to scale)</text>
+      </svg>
+    </div>
+
+    <!-- Diagram 2: Colour-space detection concept -->
+    <div class="algo-diagram-card">
+      <h4>Colour-Space Detection Concept</h4>
+      <svg viewBox="0 0 270 228" xmlns="http://www.w3.org/2000/svg"
+           style="font-family:'Open Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <defs>
+          <marker id="obs-ax" markerWidth="6" markerHeight="6"
+                  refX="5" refY="3" orient="auto">
+            <polygon points="0 0, 6 3, 0 6" fill="#57606a"/>
+          </marker>
+        </defs>
+
+        <!-- Axes -->
+        <line x1="32" y1="185" x2="248" y2="185"
+              stroke="#57606a" stroke-width="1.2" marker-end="url(#obs-ax)"/>
+        <line x1="32" y1="185" x2="32" y2="12"
+              stroke="#57606a" stroke-width="1.2" marker-end="url(#obs-ax)"/>
+        <text x="252" y="188" fill="#57606a" font-size="9">G</text>
+        <text x="36" y="12" fill="#57606a" font-size="9">B</text>
+        <text x="20" y="189" fill="#57606a" font-size="8">0</text>
+
+        <!-- Threshold circle, centre (138,125), radius 52 -->
+        <circle cx="138" cy="125" r="52" fill="none"
+                stroke="#57606a" stroke-width="1" stroke-dasharray="5,4" opacity="0.5"/>
+
+        <!-- τ_color radius label -->
+        <line x1="138" y1="125" x2="177" y2="88"
+              stroke="#57606a" stroke-width="0.8" opacity="0.35"/>
+        <text x="163" y="97" fill="#57606a" font-size="8.5" opacity="0.6">τ_color</text>
+
+        <!-- Floor colour reference -->
+        <circle cx="138" cy="125" r="5.5" fill="#1a7f37"/>
+        <text x="144" y="142" fill="#1a7f37" font-size="9" font-weight="600">c_floor</text>
+
+        <!-- Floor pixels (green, inside threshold) -->
+        <circle cx="120" cy="115" r="3" fill="#1a7f37" opacity="0.6"/>
+        <circle cx="150" cy="120" r="3" fill="#1a7f37" opacity="0.6"/>
+        <circle cx="128" cy="138" r="3" fill="#1a7f37" opacity="0.6"/>
+        <circle cx="153" cy="109" r="3" fill="#1a7f37" opacity="0.6"/>
+        <circle cx="124" cy="131" r="3" fill="#1a7f37" opacity="0.6"/>
+        <circle cx="146" cy="136" r="3" fill="#1a7f37" opacity="0.6"/>
+        <circle cx="132" cy="112" r="3" fill="#1a7f37" opacity="0.6"/>
+        <text x="100" y="157" fill="#1a7f37" font-size="8.5">floor pixels</text>
+
+        <!-- Obstacle pixels (red, upper right, outside threshold) -->
+        <circle cx="196" cy="45" r="3" fill="#f85149" opacity="0.7"/>
+        <circle cx="211" cy="60" r="3" fill="#f85149" opacity="0.7"/>
+        <circle cx="190" cy="65" r="3" fill="#f85149" opacity="0.7"/>
+        <circle cx="220" cy="50" r="3" fill="#f85149" opacity="0.7"/>
+        <circle cx="204" cy="38" r="3" fill="#f85149" opacity="0.7"/>
+        <text x="195" y="82" fill="#f85149" font-size="8.5">obstacle</text>
+        <text x="197" y="93" fill="#f85149" font-size="8">(counted)</text>
+
+        <!-- Line tape pixels (violet, lower left, outside threshold, excluded) -->
+        <circle cx="62" cy="168" r="3" fill="#8250df" opacity="0.75"/>
+        <circle cx="74" cy="160" r="3" fill="#8250df" opacity="0.75"/>
+        <circle cx="56" cy="156" r="3" fill="#8250df" opacity="0.75"/>
+        <circle cx="78" cy="172" r="3" fill="#8250df" opacity="0.75"/>
+        <circle cx="68" cy="176" r="3" fill="#8250df" opacity="0.75"/>
+        <text x="52" y="140" fill="#8250df" font-size="8.5">line tape</text>
+        <text x="50" y="151" fill="#8250df" font-size="8">(excluded by</text>
+        <text x="52" y="161" fill="#8250df" font-size="8">HSV mask)</text>
+
+        <!-- Distance arrow to obstacle -->
+        <line x1="138" y1="125" x2="196" y2="55"
+              stroke="#f85149" stroke-width="1" stroke-dasharray="4,3" opacity="0.55"/>
+        <text x="172" y="108" fill="#f85149" font-size="8.5" opacity="0.8">d &gt; τ</text>
+
+        <!-- Caption -->
+        <text x="140" y="218" text-anchor="middle"
+              fill="#57606a" font-size="9.5">BGR colour space (G–B projection)</text>
+      </svg>
+    </div>
+  </div><!-- .algo-diagrams -->
+
+  <!-- Equations -->
+  <div class="algo-equations">
+    <div class="eq-card">
+      <h4>Floor Colour Sampling</h4>
+      <div class="eq-formula">
+        <div>
+          <span class="sym">c_floor</span>
+          <span class="muted"> = median { BGR(i,j) :</span>
+        </div>
+        <div>
+          <span class="muted">   i ∈ [0.85h, h),  j ∈ [0.25w, 0.75w) }</span>
+        </div>
+      </div>
+      <p>
+        Sampled from the bottom 15 % of the frame — always bare floor right in front of
+        the robot. The <strong style="color:var(--text)">median</strong> is robust to the
+        coloured line tape that may appear in the strip. Recomputed every tick so lighting
+        changes are handled automatically with no calibration step.
+      </p>
+    </div>
+
+    <div class="eq-card">
+      <h4>Obstacle Presence Fraction</h4>
+      <div class="eq-formula">
+        <div>
+          <span class="sym">f_obs</span>
+          <span class="muted"> = (1/|Z|) Σ 𝟙[</span>
+          <span class="val">d(i,j) &gt; τ_color</span>
+        </div>
+        <div>
+          <span class="muted">                 ∧ </span>
+          <span class="val">L(i,j) = 0</span>
+          <span class="muted">]</span>
+        </div>
+        <div style="margin-top:0.4rem">
+          <span class="muted">trigger: </span>
+          <span class="sym">f_obs</span>
+          <span class="muted"> &gt; </span>
+          <span class="val">τ_presence</span>
+          <span class="muted"> → stop + beep</span>
+        </div>
+      </div>
+      <p>
+        <code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;
+               padding:0.1rem 0.35rem;font-size:0.8rem;color:var(--accent2)">d(i,j)</code>
+        is the BGR Euclidean distance from
+        <code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;
+               padding:0.1rem 0.35rem;font-size:0.8rem;color:var(--accent2)">c_floor</code>.
+        <code style="background:var(--surface);border:1px solid var(--border);border-radius:4px;
+               padding:0.1rem 0.35rem;font-size:0.8rem;color:var(--accent2)">L(i,j)</code>
+        is the line-colour HSV mask — it excludes tape pixels to prevent false stops.
+        Both conditions must hold for a pixel to count as an obstacle.
+      </p>
+    </div>
+  </div><!-- .algo-equations -->
+
+  <!-- Parameter table -->
+  <table class="algo-table">
+    <thead>
+      <tr>
+        <th>Flag</th>
+        <th>Default</th>
+        <th>Effect</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>--obstacle-stop</td><td>off</td>
+        <td>Enable obstacle detection. Off by default — add this flag to activate.</td>
+      </tr>
+      <tr>
+        <td>--obstacle-color-thresh</td><td>40.0</td>
+        <td>BGR Euclidean distance threshold τ_color. Lower = more sensitive; raise on textured or unevenly-lit floors.</td>
+      </tr>
+      <tr>
+        <td>--obstacle-presence-thresh</td><td>0.25</td>
+        <td>Fraction of the detection zone that must be non-floor, non-line to trigger a stop. Lower = reacts to smaller objects.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Usage example -->
+  <div class="code-block" style="margin-top:1.5rem">
+    <div><span class="comment"># Line following with obstacle avoidance</span></div>
+    <div><span class="prompt">$ </span>python -m client.line_follow \</div>
+    <div>    --robot-ip 192.168.88.100 --colour red --obstacle-stop</div>
+    <div>&nbsp;</div>
+    <div><span class="comment"># With PS5 override + obstacle avoidance (PS5 bypasses the obstacle check)</span></div>
+    <div><span class="prompt">$ </span>python -m client.line_follow \</div>
+    <div>    --robot-ip 192.168.88.100 --colour red \</div>
+    <div>    --controller ps5 --obstacle-stop</div>
+  </div>
 </section>
 
 <hr class="divider" />

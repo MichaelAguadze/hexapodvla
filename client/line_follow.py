@@ -38,6 +38,14 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Enable PS5 manual override (sticks override the line follower)")
     parser.add_argument("--joystick-index", type=int, default=0,
                         help="Pygame joystick index (for --controller ps5)")
+
+    obs = parser.add_argument_group("obstacle avoidance")
+    obs.add_argument("--obstacle-stop", action="store_true",
+                     help="Stop when an obstacle is detected inside the line ROI")
+    obs.add_argument("--obstacle-color-thresh", type=float, default=40.0,
+                     help="BGR colour distance from floor to count a pixel as an obstacle (default 40)")
+    obs.add_argument("--obstacle-presence-thresh", type=float, default=0.25,
+                     help="Fraction of the ROI that must be non-floor, non-line to trigger a stop (default 0.25)")
     return parser
 
 
@@ -54,6 +62,7 @@ def main() -> None:
     print("  Speed:      {}".format(args.speed))
     print("  Kp/Kd:      {} / {}".format(args.kp, args.kd))
     print("  Controller: {}".format(args.controller or "none"))
+    print("  Obstacles:  {}".format("enabled" if args.obstacle_stop else "disabled"))
     print()
 
     client = RobotClient(robot_url=robot_url, timeout=1.0, max_retries=2)
@@ -93,6 +102,9 @@ def main() -> None:
         memory_duration=args.memory_duration,
         show_preview=args.preview,
         controller=controller,
+        obstacle_stop=args.obstacle_stop,
+        obs_color_thresh=args.obstacle_color_thresh,
+        obs_presence_thresh=args.obstacle_presence_thresh,
     )
 
     try:
