@@ -271,6 +271,9 @@ class LineFollower:
         h, w = frame_bgr.shape[:2]
         frame_cx = w / 2.0
 
+        # roi_y computed here so the preview can be drawn in all code paths
+        roi_y = int(h * self.roi_top)
+
         # --- Obstacle detection (runs on the full frame before line logic) ---
         if self._obstacle_stop:
             if self._detect_obstacle(frame_bgr):
@@ -284,11 +287,12 @@ class LineFollower:
                 self._prev_error = 0.0
                 print("\r[LineFollower] OBSTACLE — stopped.                    ",
                       end="", flush=True)
+                if self.show_preview:
+                    empty_mask = np.zeros((h - roi_y, w), dtype=np.uint8)
+                    self._draw_preview(frame_bgr, roi_y, empty_mask,
+                                       None, 0.0, 0.0, 0.0)
                 return
             self._obstacle_active = False
-
-        # Crop to the lower portion of the frame (look-ahead ROI)
-        roi_y = int(h * self.roi_top)
         roi = frame_bgr[roi_y:, :]
 
         hsv  = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
@@ -379,12 +383,12 @@ class LineFollower:
             floor_strip.reshape(-1, 3), axis=0
         ).astype(np.float32)
 
-        # Detection zone: the line ROI (above floor sample), centre 60% width
-        obs_top = int(h * self.roi_top)
+        # Detection zone: immediately above the floor sample, centre 60% width
+        obs_top = int(h * 0.65)
         obs_bot = int(h * 0.85)
         if obs_bot <= obs_top:
             return False
-        zone_bgr = frame_bgr[obs_top:obs_bot, int(w * 0.2):int(w * 0.8)]
+        zone_bgr = frame_bgr[obs_top:obs_bot, int(w * 0.325):int(w * 0.675)]
         if zone_bgr.size == 0:
             return False
 
@@ -428,7 +432,7 @@ class LineFollower:
 
         # Obstacle detection zone (orange box, inside ROI)
         if self._obstacle_stop:
-            obs_top = roi_y
+            obs_top = int(h * 0.65)
             obs_bot = int(h * 0.85)
             ox1, ox2 = int(w * 0.2), int(w * 0.8)
             color = (0, 0, 255) if self._obstacle_active else (0, 140, 255)
