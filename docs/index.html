@@ -15,7 +15,7 @@
       --bg:        #ffffff;
       --surface:   #f6f8fa;
       --border:    #d0d7de;
-      --accent:    #374151;
+      --accent:    #64748b;
       --accent2:   #1a7f37;
       --text:      #1f2328;
       --muted:     #57606a;
@@ -50,12 +50,12 @@
     .hero {
       text-align: center;
       padding: 6rem 2rem 4rem;
-      background: radial-gradient(ellipse at 50% 0%, #e5e7eb 0%, var(--bg) 65%);
+      background: radial-gradient(ellipse at 50% 0%, #e2e8f0 0%, var(--bg) 65%);
     }
     .badge {
       display: inline-block;
-      background: rgba(55, 65, 81, 0.07);
-      border: 1px solid rgba(55, 65, 81, 0.22);
+      background: rgba(100, 116, 139, 0.07);
+      border: 1px solid rgba(100, 116, 139, 0.22);
       color: var(--accent);
       font-size: 0.78rem;
       font-weight: 600;
@@ -167,8 +167,8 @@
     .step-num {
       flex-shrink: 0;
       width: 2rem; height: 2rem;
-      background: rgba(55, 65, 81, 0.07);
-      border: 1px solid rgba(55, 65, 81, 0.22);
+      background: rgba(100, 116, 139, 0.07);
+      border: 1px solid rgba(100, 116, 139, 0.22);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 0.85rem; color: var(--accent);
@@ -384,11 +384,11 @@
         <defs>
           <marker id="arr-blue" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#374151"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#64748b"/>
           </marker>
           <marker id="arr-blue-r" markerWidth="7" markerHeight="7"
                   refX="2" refY="3.5" orient="auto">
-            <polygon points="7 0, 0 3.5, 7 7" fill="#374151"/>
+            <polygon points="7 0, 0 3.5, 7 7" fill="#64748b"/>
           </marker>
           <marker id="arr-gray" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
@@ -414,12 +414,12 @@
 
         <!-- Centreline -->
         <line x1="150" y1="76" x2="150" y2="204"
-              stroke="#374151" stroke-width="1.5"
+              stroke="#64748b" stroke-width="1.5"
               stroke-dasharray="5,4" opacity="0.65"/>
         <line x1="150" y1="8" x2="150" y2="76"
-              stroke="#374151" stroke-width="1"
+              stroke="#64748b" stroke-width="1"
               stroke-dasharray="3,5" opacity="0.2"/>
-        <text x="154" y="91" fill="#374151" font-size="10" opacity="0.85">w/2</text>
+        <text x="154" y="91" fill="#64748b" font-size="10" opacity="0.85">w/2</text>
 
         <!-- Line blob (tilted ellipse via transform) -->
         <g transform="translate(187,148) rotate(16)">
@@ -438,7 +438,7 @@
 
         <!-- Guide lines dropping below frame -->
         <line x1="150" y1="204" x2="150" y2="222"
-              stroke="#374151" stroke-width="1"
+              stroke="#64748b" stroke-width="1"
               stroke-dasharray="3,2" opacity="0.35"/>
         <line x1="187" y1="204" x2="187" y2="222"
               stroke="#1a7f37" stroke-width="1"
@@ -446,15 +446,15 @@
 
         <!-- Lateral error double arrow -->
         <line x1="153" y1="226" x2="184" y2="226"
-              stroke="#374151" stroke-width="2"
+              stroke="#64748b" stroke-width="2"
               marker-end="url(#arr-blue)"
               marker-start="url(#arr-blue-r)"/>
         <line x1="150" y1="220" x2="150" y2="232"
-              stroke="#374151" stroke-width="1.5"/>
+              stroke="#64748b" stroke-width="1.5"/>
         <line x1="187" y1="220" x2="187" y2="232"
-              stroke="#374151" stroke-width="1.5"/>
+              stroke="#64748b" stroke-width="1.5"/>
         <text x="168" y="245" text-anchor="middle"
-              fill="#374151" font-size="10.5">
+              fill="#64748b" font-size="10.5">
           e&#x2097;&#x2090;&#x209C; = (c&#x2093; &#x2212; w/2) / (w/2)
         </text>
 
@@ -476,15 +476,15 @@
         <defs>
           <marker id="arr-b2" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#374151"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#64748b"/>
           </marker>
           <marker id="arr-b2r" markerWidth="7" markerHeight="7"
                   refX="2" refY="3.5" orient="auto">
-            <polygon points="7 0, 0 3.5, 7 7" fill="#374151"/>
+            <polygon points="7 0, 0 3.5, 7 7" fill="#64748b"/>
           </marker>
           <marker id="arr-fwd" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
-            <polygon points="0 0, 7 3.5, 0 7" fill="#374151" opacity="0.9"/>
+            <polygon points="0 0, 7 3.5, 0 7" fill="#64748b" opacity="0.9"/>
           </marker>
           <marker id="arr-tan" markerWidth="7" markerHeight="7"
                   refX="5" refY="3.5" orient="auto">
@@ -521,26 +521,26 @@
           <rect x=" 22" y=" 12" width="8" height="16" rx="2" fill="#8c959f"/>
           <!-- Forward arrow (local up = robot forward) -->
           <line x1="0" y1="0" x2="0" y2="-52"
-                stroke="#374151" stroke-width="2"
+                stroke="#64748b" stroke-width="2"
                 marker-end="url(#arr-fwd)"/>
           <!-- Centre dot -->
           <circle cx="0" cy="0" r="3" fill="#1f2328"/>
         </g>
-        <text x="230" y="102" fill="#374151" font-size="10">forward</text>
+        <text x="230" y="102" fill="#64748b" font-size="10">forward</text>
 
         <!-- Closest point on line to robot centre = (78, 148) -->
-        <circle cx="78" cy="148" r="3.5" fill="#374151" opacity="0.9"/>
+        <circle cx="78" cy="148" r="3.5" fill="#64748b" opacity="0.9"/>
 
         <!-- Lateral offset arrow (horizontal, from line to robot centre) -->
         <line x1="82" y1="148" x2="186" y2="148"
-              stroke="#374151" stroke-width="1.8"
+              stroke="#64748b" stroke-width="1.8"
               stroke-dasharray="5,3"
               marker-end="url(#arr-b2)"
               marker-start="url(#arr-b2r)"/>
         <text x="132" y="163" text-anchor="middle"
-              fill="#374151" font-size="11" font-weight="600">d</text>
+              fill="#64748b" font-size="11" font-weight="600">d</text>
         <text x="132" y="175" text-anchor="middle"
-              fill="#374151" font-size="9" opacity="0.75">(lateral offset)</text>
+              fill="#64748b" font-size="9" opacity="0.75">(lateral offset)</text>
 
         <!-- Heading error arc: reference (straight up) vs robot forward (rotated 20° CW) -->
         <!-- Reference tangent direction at robot centre, straight up -->
@@ -740,8 +740,8 @@
               fill="#b45309" font-size="8">non-floor ∧ non-line</text>
 
         <!-- Line ROI side label -->
-        <text x="28" y="108" fill="#374151" font-size="8.5" opacity="0.75">line</text>
-        <text x="28" y="120" fill="#374151" font-size="8.5" opacity="0.75">ROI</text>
+        <text x="28" y="108" fill="#64748b" font-size="8.5" opacity="0.75">line</text>
+        <text x="28" y="120" fill="#64748b" font-size="8.5" opacity="0.75">ROI</text>
 
         <!-- Floor sample label -->
         <text x="129" y="183" text-anchor="middle"
