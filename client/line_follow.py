@@ -46,6 +46,21 @@ def build_parser() -> argparse.ArgumentParser:
                      help="BGR colour distance from floor to count a pixel as an obstacle (default 40)")
     obs.add_argument("--obstacle-presence-thresh", type=float, default=0.25,
                      help="Fraction of the ROI that must be non-floor, non-line to trigger a stop (default 0.25)")
+
+    yolo = parser.add_argument_group("YOLO obstacle detection (overrides colour-threshold when enabled)")
+    yolo.add_argument("--yolo-obstacle", action="store_true",
+                      help="Use YOLO for obstacle detection instead of colour thresholds "
+                           "(requires --obstacle-stop)")
+    yolo.add_argument("--yolo-model", default="yolov8n.pt",
+                      help="ultralytics model file (default: yolov8n.pt)")
+    yolo.add_argument("--yolo-confidence", type=float, default=0.40,
+                      help="minimum YOLO detection confidence (default 0.40)")
+    yolo.add_argument("--yolo-device", default="cpu",
+                      help="inference device: cpu | cuda | mps (default cpu)")
+    yolo.add_argument("--yolo-classes", nargs="*", default=None,
+                      metavar="CLASS",
+                      help="restrict YOLO obstacle classes (default: all). "
+                           "Underscores are converted to spaces, e.g. sports_ball")
     return parser
 
 
@@ -63,6 +78,9 @@ def main() -> None:
     print("  Kp/Kd:      {} / {}".format(args.kp, args.kd))
     print("  Controller: {}".format(args.controller or "none"))
     print("  Obstacles:  {}".format("enabled" if args.obstacle_stop else "disabled"))
+    if args.obstacle_stop and args.yolo_obstacle:
+        print("  YOLO obs:   model={} conf={:.0%} device={}".format(
+            args.yolo_model, args.yolo_confidence, args.yolo_device))
     print()
 
     client = RobotClient(robot_url=robot_url, timeout=1.0, max_retries=2)
@@ -72,6 +90,22 @@ def main() -> None:
         print("  ERROR: Cannot reach robot at {}".format(robot_url))
         print("  Make sure the robot server is running.")
         return
+
+    yolo_detector = None
+    if args.obstacle_stop and args.yolo_obstacle:
+        from .object_detector import ObjectDetector
+        yolo_classes = None
+        if args.yolo_classes:
+            yolo_classes = [c.replace("_", " ") for c in args.yolo_classes]
+        print("  Loading YOLO model for obstacle detection...")
+        yolo_detector = ObjectDetector(
+            model_name=args.yolo_model,
+            confidence=args.yolo_confidence,
+            device=args.yolo_device,
+            classes=yolo_classes,
+        )
+        print("  YOLO model loaded.")
+        print()
 
     controller = None
     if args.controller == "ps5":
@@ -105,6 +139,8 @@ def main() -> None:
         obstacle_stop=args.obstacle_stop,
         obs_color_thresh=args.obstacle_color_thresh,
         obs_presence_thresh=args.obstacle_presence_thresh,
+        yolo_detector=yolo_detector,
+        yolo_obstacle_classes=args.yolo_classes,
     )
 
     try:

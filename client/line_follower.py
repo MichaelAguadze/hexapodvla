@@ -22,7 +22,7 @@ Algorithm
 from __future__ import annotations
 
 import time
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -147,6 +147,10 @@ class LineFollower:
                               pixel as non-floor / obstacle.
         obs_presence_thresh:  Fraction of the ROI that must contain non-floor,
                               non-line pixels before triggering a stop.
+        yolo_detector:        If provided, use YOLO instead of colour thresholding
+                              for obstacle detection.  Requires `obstacle_stop=True`.
+        yolo_obstacle_classes: Restrict YOLO obstacle detection to these class labels.
+                              None means any detected object counts as an obstacle.
     """
 
     def __init__(
@@ -169,6 +173,8 @@ class LineFollower:
         obstacle_stop: bool = False,
         obs_color_thresh: float = 40.0,
         obs_presence_thresh: float = 0.25,
+        yolo_detector=None,
+        yolo_obstacle_classes: Optional[List[str]] = None,
     ):
         if colour not in _COLOUR_RANGES:
             raise ValueError(
@@ -195,7 +201,9 @@ class LineFollower:
         self._obstacle_stop       = obstacle_stop
         self._obs_color_thresh    = obs_color_thresh
         self._obs_presence_thresh = obs_presence_thresh
-        self._obstacle_active   = False
+        self._yolo_detector       = yolo_detector
+        self._yolo_classes        = set(yolo_obstacle_classes) if yolo_obstacle_classes else None
+        self._obstacle_active     = False
 
         self._prev_error   = 0.0
         self._last_seen    = time.monotonic()
@@ -366,7 +374,34 @@ class LineFollower:
                                lateral_error, vx, omega)
 
     def _detect_obstacle(self, frame_bgr: np.ndarray) -> bool:
-        """Return True if an obstacle is present inside the line ROI.
+        """Return True if an obstacle is present in the forward zone.
+
+        Delegates to YOLO if a detector is attached; otherwise falls back to
+        the colour-threshold approach.
+        """
+        if self._yolo_detector is not None:
+            return self._yolo_detect_obstacle(frame_bgr)
+        return self._color_detect_obstacle(frame_bgr)
+
+    def _yolo_detect_obstacle(self, frame_bgr: np.ndarray) -> bool:
+        """YOLO-based obstacle check: any recognised object in the forward zone."""
+        h, w = frame_bgr.shape[:2]
+        detections = self._yolo_detector.detect(frame_bgr)
+        # Forward zone: centre 35% width, rows 65-85% of frame height
+        zone_cx_lo, zone_cx_hi = 0.325, 0.675
+        zone_cy_lo, zone_cy_hi = 0.65, 0.85
+        for det in detections:
+            if self._yolo_classes and det.label not in self._yolo_classes:
+                continue
+            if det.area_fraction < 0.005:
+                continue
+            if (zone_cx_lo <= det.center_x <= zone_cx_hi
+                    and zone_cy_lo <= det.center_y <= zone_cy_hi):
+                return True
+        return False
+
+    def _color_detect_obstacle(self, frame_bgr: np.ndarray) -> bool:
+        """Colour-threshold obstacle check (original algorithm).
 
         Samples the floor colour from the bottom strip (always bare floor),
         then counts pixels inside the ROI that are neither floor-coloured nor
