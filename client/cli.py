@@ -60,7 +60,7 @@ def _prompt_menu(title: str, options: list[str]) -> int | None:
 def main() -> None:
     """Run the top-level launcher."""
     parser = build_parser()
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
     if args.mode == "line-follow":
         from .line_follow import main as run_line_follow
